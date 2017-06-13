@@ -1,0 +1,3 @@
+# 
+# m h  dom mon dow   command
+* 22 * * * /root/domainscan.sh >> /var/log/domainscan.log
