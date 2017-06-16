@@ -84,7 +84,7 @@ class ComposerStaticInit54b73d711aa56d6874a507288b94306a
         ),
         'A' => 
         array (
-            'Aura\\Intl\\_Config\\' => 18,
+            'Aura\\Intl\\' => 10,
             'App\\Test\\' => 9,
             'App\\' => 4,
         ),
@@ -227,9 +227,9 @@ class ComposerStaticInit54b73d711aa56d6874a507288b94306a
         array (
             0 => __DIR__ . '/..' . '/cakephp/bake/src',
         ),
-        'Aura\\Intl\\_Config\\' => 
+        'Aura\\Intl\\' => 
         array (
-            0 => __DIR__ . '/..' . '/aura/intl/config',
+            0 => __DIR__ . '/..' . '/aura/intl/src',
         ),
         'App\\Test\\' => 
         array (
@@ -258,17 +258,6 @@ class ComposerStaticInit54b73d711aa56d6874a507288b94306a
             'Detection' => 
             array (
                 0 => __DIR__ . '/..' . '/mobiledetect/mobiledetectlib/namespaced',
-            ),
-        ),
-        'A' => 
-        array (
-            'Aura\\Intl' => 
-            array (
-                0 => __DIR__ . '/..' . '/aura/intl/src',
-            ),
-            'Aura\\Composer\\' => 
-            array (
-                0 => __DIR__ . '/..' . '/aura/installer-default/src',
             ),
         ),
     );

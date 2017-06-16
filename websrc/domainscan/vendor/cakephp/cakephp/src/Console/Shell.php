@@ -116,7 +116,7 @@ class Shell
      *
      * @var string
      */
-    public $name = null;
+    public $name;
 
     /**
      * The name of the plugin the shell belongs to.
@@ -124,12 +124,12 @@ class Shell
      *
      * @var string
      */
-    public $plugin = null;
+    public $plugin;
 
     /**
      * Contains tasks to load and instantiate
      *
-     * @var array
+     * @var array|bool
      * @link http://book.cakephp.org/3.0/en/console-and-shells.html#Shell::$tasks
      */
     public $tasks = [];
@@ -433,7 +433,7 @@ class Shell
             $this->params = array_merge($this->params, $extra);
         }
         $this->_setOutputLevel();
-        if (!empty($this->params['plugin'])) {
+        if (!empty($this->params['plugin']) && !Plugin::loaded($this->params['plugin'])) {
             Plugin::load($this->params['plugin']);
         }
         $this->command = $command;
@@ -449,13 +449,13 @@ class Shell
             array_shift($this->args);
             $this->startup();
 
-            return call_user_func_array([$this, $method], $this->args);
+            return $this->$method(...$this->args);
         }
 
         if ($isMethod && isset($subcommands[$command])) {
             $this->startup();
 
-            return call_user_func_array([$this, $method], $this->args);
+            return $this->$method(...$this->args);
         }
 
         if ($this->hasTask($command) && isset($subcommands[$command])) {
@@ -469,7 +469,7 @@ class Shell
             $this->command = 'main';
             $this->startup();
 
-            return call_user_func_array([$this, 'main'], $this->args);
+            return $this->main(...$this->args);
         }
 
         $this->out($this->OptionParser->help($command));
@@ -528,9 +528,8 @@ class Shell
     public function getOptionParser()
     {
         $name = ($this->plugin ? $this->plugin . '.' : '') . $this->name;
-        $parser = new ConsoleOptionParser($name);
 
-        return $parser;
+        return new ConsoleOptionParser($name);
     }
 
     /**
@@ -761,7 +760,7 @@ class Shell
      * @throws \Cake\Console\Exception\StopException
      * @return int Error code
      * @link http://book.cakephp.org/3.0/en/console-and-shells.html#styling-output
-     * @deprecated Since 3.2.0. Use Shell::abort() instead.
+     * @deprecated 3.2.0 Use Shell::abort() instead.
      */
     public function error($title, $message = null, $exitCode = self::CODE_ERROR)
     {

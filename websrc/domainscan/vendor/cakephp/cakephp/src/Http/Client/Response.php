@@ -228,9 +228,9 @@ class Response extends Message implements ResponseInterface
         $value = rtrim($value, ';');
         $nestedSemi = '";"';
         if (strpos($value, $nestedSemi) !== false) {
-            $value = str_replace($nestedSemi, "{__cookie_replace__}", $value);
+            $value = str_replace($nestedSemi, '{__cookie_replace__}', $value);
             $parts = explode(';', $value);
-            $parts = str_replace("{__cookie_replace__}", $nestedSemi, $parts);
+            $parts = str_replace('{__cookie_replace__}', $nestedSemi, $parts);
         } else {
             $parts = preg_split('/\;[ \t]*/', $value);
         }
@@ -319,7 +319,7 @@ class Response extends Message implements ResponseInterface
      *
      * @param int $code The status code to set.
      * @param string $reasonPhrase The status reason phrase.
-     * @return self A copy of the current object with an updated status code.
+     * @return $this A copy of the current object with an updated status code.
      */
     public function withStatus($code, $reasonPhrase = '')
     {
@@ -505,7 +505,7 @@ class Response extends Message implements ResponseInterface
      */
     protected function _getJson()
     {
-        if (!empty($this->_json)) {
+        if ($this->_json) {
             return $this->_json;
         }
 
@@ -519,7 +519,7 @@ class Response extends Message implements ResponseInterface
      */
     protected function _getXml()
     {
-        if (!empty($this->_xml)) {
+        if ($this->_xml) {
             return $this->_xml;
         }
         libxml_use_internal_errors();
@@ -559,7 +559,6 @@ class Response extends Message implements ResponseInterface
 
         return $this->stream->getContents();
     }
-
 
     /**
      * Read values as properties.
@@ -601,3 +600,6 @@ class Response extends Message implements ResponseInterface
         return isset($this->{$key});
     }
 }
+
+// @deprecated Add backwards compat alias.
+class_alias('Cake\Http\Client\Response', 'Cake\Network\Http\Response');

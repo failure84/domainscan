@@ -24,7 +24,7 @@ use Cake\View\View;
  *
  * Text manipulations: Highlight, excerpt, truncate, strip of links, convert email addresses to mailto: links...
  *
- * @property HtmlHelper $Html
+ * @property \Cake\View\Helper\HtmlHelper $Html
  * @link http://book.cakephp.org/3.0/en/views/helpers/text.html
  * @see \Cake\Utility\Text
  */
@@ -56,9 +56,9 @@ class TextHelper extends Helper
     protected $_placeholders = [];
 
     /**
-     * String utility instance
+     * Cake Utility Text instance
      *
-     * @var \stdClass
+     * @var \Cake\Utility\Text
      */
     protected $_engine;
 
@@ -123,7 +123,7 @@ class TextHelper extends Helper
                     (?<left>[\[<(]) # left paren,brace
                     (?>
                         # Lax match URL
-                        (?<url>(?:https?|ftp|nntp):\/\/[\p{L}0-9.\-_:]+(?:[\/?][\p{L}0-9.\-_:\/?=&>\[\]()#@]+)?)
+                        (?<url>(?:https?|ftp|nntp):\/\/[\p{L}0-9.\-_:]+(?:[\/?][\p{L}0-9.\-_:\/?=&>\[\]()#@\+~%]+)?)
                         (?<right>[\])>]) # right paren,brace
                     )
                 )

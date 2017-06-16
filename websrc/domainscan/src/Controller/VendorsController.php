@@ -2,6 +2,7 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
+use Cake\Cache\Cache;
 
 /**
  * Vendors Controller
@@ -31,6 +32,7 @@ class VendorsController extends AppController
 		'total_domains' => 'DESC'
 	]
     ];
+
 	$query = $this->Vendors->find(); 
 	$query->select(['Vendors.id', 'Vendors.name', 'Vendors.created', 'Vendors.modified', 'total_domains' => $query->func()->count('Domains.id')])
         ->matching('Domains')

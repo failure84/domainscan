@@ -11,7 +11,7 @@
     <table class="vertical-table">
         <tr>
             <th><?= __('Name') ?></th>
-            <td><?= h($domain->name) ?></td>
+            <td><?= $this->Html->link($domain->name, 'http://'.$domain->name, [ 'target' => '_blank' ] ) ?></td>
         </tr>
         <tr>
             <th><?= __('Id') ?></th>

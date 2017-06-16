@@ -205,3 +205,8 @@ Type::build('datetime')->useLocaleParser();
 
 // SphinxSearch
 Plugin::load('Sphinx');
+
+#Plugin::load('DebugKit');
+
+Plugin::load('DebugKit', ['bootstrap' => true]);
+

@@ -15,7 +15,6 @@ namespace Cake\Http\Client;
 
 use Cake\Core\Exception\Exception;
 use Psr\Http\Message\RequestInterface;
-use Zend\Diactoros\MessageTrait;
 use Zend\Diactoros\RequestTrait;
 use Zend\Diactoros\Stream;
 
@@ -253,3 +252,6 @@ class Request extends Message implements RequestInterface
         return $this;
     }
 }
+
+// @deprecated Add backwards compat alias.
+class_alias('Cake\Http\Client\Request', 'Cake\Network\Http\Request');
