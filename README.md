@@ -66,4 +66,12 @@ vendors_mxs | CREATE TABLE `vendors_mxs` (
   UNIQUE KEY `value` (`value`),
   KEY `idx_vendor_id` (`vendor_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=106 DEFAULT CHARSET=latin1
+
+CREATE TABLE `stats` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `vendor_id` int(11) NOT NULL,
+  `total_domains` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=latin1
 ```
