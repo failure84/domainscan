@@ -48,6 +48,11 @@ class VendorsTable extends Table
             'dependent' => true,
         ]);
 
+        $this->hasMany('Stats', [
+            'foreignKey' => 'vendor_id',
+            'dependent' => true,
+        ]);
+
 
     }
 
