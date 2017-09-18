@@ -90,6 +90,29 @@
     <?php endif; ?>
     </div>
 
+    <div class="related">
+        <h4><?= __('Related Stats') ?></h4>
+        <?php if (!empty($vendor->stats)): ?>
+        <table cellpadding="0" cellspacing="0">
+            <tr>
+                <th><?= __('Id') ?></th>
+                <th><?= __('Date') ?></th>
+                <th><?= __('Total Domains') ?></th>
+                <th class="actions"><?= __('Actions') ?></th>
+            </tr>
+            <?php foreach ($vendor->stats as $stats): ?>
+            <tr>
+                <td><?= h($stats->id) ?></td>
+                <td><?= h($stats->date) ?></td>
+                <td><?= $this->Number->format($stats->total_domains) ?></td>
+                <td class="actions">
+                    <?= $this->Html->link(__('View'), ['controller' => 'Stats', 'action' => 'view', $stats->id]) ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php endif; ?>
+    </div>
 
     <div class="related">
     <h4><?= __('Related Domains') ?></h4>
