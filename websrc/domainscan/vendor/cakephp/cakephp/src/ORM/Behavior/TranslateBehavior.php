@@ -1,16 +1,16 @@
 <?php
 /**
- * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
- * @link          http://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * @link          https://cakephp.org CakePHP(tm) Project
  * @since         3.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
 namespace Cake\ORM\Behavior;
 
@@ -99,7 +99,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
     public function __construct(Table $table, array $config = [])
     {
         $config += [
-            'defaultLocale' => I18n::defaultLocale(),
+            'defaultLocale' => I18n::getDefaultLocale(),
             'referenceName' => $this->_referenceName($table)
         ];
 
@@ -118,7 +118,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
      */
     public function initialize(array $config)
     {
-        $this->_translationTable = $this->tableLocator()->get($this->_config['translationTable']);
+        $this->_translationTable = $this->getTableLocator()->get($this->_config['translationTable']);
 
         $this->setupFieldAssociations(
             $this->_config['fields'],
@@ -147,7 +147,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
         $targetAlias = $this->_translationTable->getAlias();
         $alias = $this->_table->getAlias();
         $filter = $this->_config['onlyTranslated'];
-        $tableLocator = $this->tableLocator();
+        $tableLocator = $this->getTableLocator();
 
         foreach ($fields as $field) {
             $name = $alias . '_' . $field . '_translation';
@@ -308,7 +308,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
         // entity persists.
         if ($noFields && $bundled && !$key) {
             foreach ($this->_config['fields'] as $field) {
-                $entity->dirty($field, true);
+                $entity->setDirty($field, true);
             }
 
             return;
@@ -328,6 +328,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
                 'model' => $model
             ])
             ->enableBufferedResults(false)
+            ->all()
             ->indexBy('field');
 
         $modified = [];
@@ -346,10 +347,10 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
 
         $entity->set('_i18n', array_merge($bundled, array_values($modified + $new)));
         $entity->set('_locale', $locale, ['setter' => false]);
-        $entity->dirty('_locale', false);
+        $entity->setDirty('_locale', false);
 
         foreach ($fields as $field) {
-            $entity->dirty($field, false);
+            $entity->setDirty($field, false);
         }
     }
 
@@ -392,13 +393,13 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
                             $translations[$language] = $this->_table->newEntity();
                         }
                         $marshaller->merge($translations[$language], $fields, $options);
-                        if ((bool)$translations[$language]->errors()) {
-                            $errors[$language] = $translations[$language]->errors();
+                        if ((bool)$translations[$language]->getErrors()) {
+                            $errors[$language] = $translations[$language]->getErrors();
                         }
                     }
                     // Set errors into the root entity, so validation errors
                     // match the original form data position.
-                    $entity->errors($errors);
+                    $entity->setErrors($errors);
                 }
 
                 return $translations;
@@ -417,7 +418,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
     public function locale($locale = null)
     {
         if ($locale === null) {
-            return $this->_locale ?: I18n::locale();
+            return $this->_locale ?: I18n::getLocale();
         }
 
         return $this->_locale = (string)$locale;
@@ -602,7 +603,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
     {
         $translations = (array)$entity->get('_translations');
 
-        if (empty($translations) && !$entity->dirty('_translations')) {
+        if (empty($translations) && !$entity->isDirty('_translations')) {
             return;
         }
 
@@ -614,7 +615,7 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
 
         foreach ($translations as $lang => $translation) {
             foreach ($fields as $field) {
-                if (!$translation->dirty($field)) {
+                if (!$translation->isDirty($field)) {
                     continue;
                 }
                 $find[] = ['locale' => $lang, 'field' => $field, 'foreign_key' => $key];
@@ -704,6 +705,6 @@ class TranslateBehavior extends Behavior implements PropertyMarshalInterface
             $query->unionAll($q);
         }
 
-        return $query->combine('num', 'id')->toArray();
+        return $query->all()->combine('num', 'id')->toArray();
     }
 }

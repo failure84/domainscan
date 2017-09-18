@@ -1,16 +1,16 @@
 <?php
 /**
- * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
- * @link          http://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * @link          https://cakephp.org CakePHP(tm) Project
  * @since         3.0.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
 namespace Cake\ORM\Association;
 
@@ -228,18 +228,42 @@ class BelongsToMany extends Association
 
     /**
      * Sets the sort order in which target records should be returned.
+     *
+     * @param mixed $sort A find() compatible order clause
+     * @return $this
+     */
+    public function setSort($sort)
+    {
+        $this->_sort = $sort;
+
+        return $this;
+    }
+
+    /**
+     * Gets the sort order in which target records should be returned.
+     *
+     * @return mixed
+     */
+    public function getSort()
+    {
+        return $this->_sort;
+    }
+
+    /**
+     * Sets the sort order in which target records should be returned.
      * If no arguments are passed the currently configured value is returned
      *
+     * @deprecated 3.5.0 Use setSort()/getSort() instead.
      * @param mixed $sort A find() compatible order clause
      * @return mixed
      */
     public function sort($sort = null)
     {
         if ($sort !== null) {
-            $this->_sort = $sort;
+            $this->setSort($sort);
         }
 
-        return $this->_sort;
+        return $this->getSort();
     }
 
     /**
@@ -268,7 +292,7 @@ class BelongsToMany extends Association
             return $this->_junctionTable;
         }
 
-        $tableLocator = $this->tableLocator();
+        $tableLocator = $this->getTableLocator();
         if ($table === null && $this->_through) {
             $table = $this->_through;
         } elseif ($table === null) {
@@ -489,7 +513,7 @@ class BelongsToMany extends Association
             ->andWhere(function ($exp) use ($subquery, $conds) {
                 $identifiers = [];
                 foreach (array_keys($conds) as $field) {
-                    $identifiers = new IdentifierExpression($field);
+                    $identifiers[] = new IdentifierExpression($field);
                 }
                 $identifiers = $subquery->newExpr()->add($identifiers)->setConjunction(',');
                 $nullExp = clone $exp;
@@ -539,7 +563,7 @@ class BelongsToMany extends Association
             'bindingKey' => $this->getBindingKey(),
             'strategy' => $this->getStrategy(),
             'associationType' => $this->type(),
-            'sort' => $this->sort(),
+            'sort' => $this->getSort(),
             'junctionAssociationName' => $name,
             'junctionProperty' => $this->_junctionProperty,
             'junctionAssoc' => $this->getTarget()->association($name),
@@ -575,7 +599,7 @@ class BelongsToMany extends Association
         $table = $this->junction();
         $hasMany = $this->getSource()->association($table->getAlias());
         if ($this->_cascadeCallbacks) {
-            foreach ($hasMany->find('all')->where($conditions)->toList() as $related) {
+            foreach ($hasMany->find('all')->where($conditions)->all()->toList() as $related) {
                 $table->delete($related, $options);
             }
 
@@ -797,14 +821,19 @@ class BelongsToMany extends Association
             $sourceKeys = array_combine($foreignKey, $sourceEntity->extract($bindingKey));
             $targetKeys = array_combine($assocForeignKey, $e->extract($targetPrimaryKey));
 
-            if ($sourceKeys !== $joint->extract($foreignKey)) {
-                $joint->set($sourceKeys, ['guard' => false]);
+            $changedKeys = (
+                $sourceKeys !== $joint->extract($foreignKey) ||
+                $targetKeys !== $joint->extract($assocForeignKey)
+            );
+            // Keys were changed, the junction table record _could_ be
+            // new. By clearing the primary key values, and marking the entity
+            // as new, we let save() sort out whether or not we have a new link
+            // or if we are updating an existing link.
+            if ($changedKeys) {
+                $joint->isNew(true);
+                $joint->unsetProperty($junction->getPrimaryKey())
+                    ->set(array_merge($sourceKeys, $targetKeys), ['guard' => false]);
             }
-
-            if ($targetKeys !== $joint->extract($assocForeignKey)) {
-                $joint->set($targetKeys, ['guard' => false]);
-            }
-
             $saved = $junction->save($joint, $options);
 
             if (!$saved && !empty($options['atomic'])) {
@@ -812,7 +841,7 @@ class BelongsToMany extends Association
             }
 
             $e->set($jointProperty, $joint);
-            $e->dirty($jointProperty, false);
+            $e->setDirty($jointProperty, false);
         }
 
         return true;
@@ -937,7 +966,7 @@ class BelongsToMany extends Association
         }
 
         $sourceEntity->set($property, array_values($existing));
-        $sourceEntity->dirty($property, false);
+        $sourceEntity->setDirty($property, false);
 
         return true;
     }
@@ -1194,7 +1223,7 @@ class BelongsToMany extends Association
 
                 ksort($targetEntities);
                 $sourceEntity->set($property, array_values($targetEntities));
-                $sourceEntity->dirty($property, false);
+                $sourceEntity->setDirty($property, false);
 
                 return true;
             }
@@ -1282,13 +1311,13 @@ class BelongsToMany extends Association
     protected function _checkPersistenceStatus($sourceEntity, array $targetEntities)
     {
         if ($sourceEntity->isNew()) {
-            $error = 'Source entity needs to be persisted before proceeding';
+            $error = 'Source entity needs to be persisted before links can be created or removed.';
             throw new InvalidArgumentException($error);
         }
 
         foreach ($targetEntities as $entity) {
             if ($entity->isNew()) {
-                $error = 'Cannot link not persisted entities';
+                $error = 'Cannot link entities that have not been persisted yet.';
                 throw new InvalidArgumentException($error);
             }
         }
@@ -1422,7 +1451,7 @@ class BelongsToMany extends Association
             $this->setSaveStrategy($opts['saveStrategy']);
         }
         if (isset($opts['sort'])) {
-            $this->sort($opts['sort']);
+            $this->setSort($opts['sort']);
         }
     }
 }
