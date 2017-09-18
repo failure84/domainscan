@@ -4,11 +4,11 @@ namespace App\Controller;
 use App\Controller\AppController;
 
 /**
- * DomainsRecords Controller
+ * Domainsrecords Controller
  *
- * @property \App\Model\Table\DomainsRecordsTable $DomainsRecords
+ * @property \App\Model\Table\DomainsrecordsTable $Domainsrecords
  */
-class DomainsRecordsController extends AppController
+class DomainsrecordsController extends AppController
 {
 
     /**
@@ -18,27 +18,24 @@ class DomainsRecordsController extends AppController
      */
     public function index()
     {
-        $this->paginate = [
-            'contain' => ['Domains', 'Vendors']
-        ];
-        $this->set('domainsRecords', $this->paginate($this->DomainsRecords));
-        $this->set('_serialize', ['domainsRecords']);
+        $this->set('domainsrecords', $this->paginate($this->Domainsrecords));
+        $this->set('_serialize', ['domainsrecords']);
     }
 
     /**
      * View method
      *
-     * @param string|null $id Domains Record id.
+     * @param string|null $id Domainsrecord id.
      * @return void
      * @throws \Cake\Network\Exception\NotFoundException When record not found.
      */
     public function view($id = null)
     {
-        $domainsRecord = $this->DomainsRecords->get($id, [
-            'contain' => ['Domains', 'Vendors']
+        $domainsrecord = $this->Domainsrecords->get($id, [
+            'contain' => []
         ]);
-        $this->set('domainsRecord', $domainsRecord);
-        $this->set('_serialize', ['domainsRecord']);
+        $this->set('domainsrecord', $domainsrecord);
+        $this->set('_serialize', ['domainsrecord']);
     }
 
     /**
@@ -48,64 +45,60 @@ class DomainsRecordsController extends AppController
      */
     public function add()
     {
-        $domainsRecord = $this->DomainsRecords->newEntity();
+        $domainsrecord = $this->Domainsrecords->newEntity();
         if ($this->request->is('post')) {
-            $domainsRecord = $this->DomainsRecords->patchEntity($domainsRecord, $this->request->data);
-            if ($this->DomainsRecords->save($domainsRecord)) {
-                $this->Flash->success(__('The domains record has been saved.'));
+            $domainsrecord = $this->Domainsrecords->patchEntity($domainsrecord, $this->request->data);
+            if ($this->Domainsrecords->save($domainsrecord)) {
+                $this->Flash->success(__('The domainsrecord has been saved.'));
                 return $this->redirect(['action' => 'index']);
             } else {
-                $this->Flash->error(__('The domains record could not be saved. Please, try again.'));
+                $this->Flash->error(__('The domainsrecord could not be saved. Please, try again.'));
             }
         }
-        $domains = $this->DomainsRecords->Domains->find('list', ['limit' => 200]);
-        $vendors = $this->DomainsRecords->Vendors->find('list', ['limit' => 200]);
-        $this->set(compact('domainsRecord', 'domains', 'vendors'));
-        $this->set('_serialize', ['domainsRecord']);
+        $this->set(compact('domainsrecord'));
+        $this->set('_serialize', ['domainsrecord']);
     }
 
     /**
      * Edit method
      *
-     * @param string|null $id Domains Record id.
+     * @param string|null $id Domainsrecord id.
      * @return void Redirects on successful edit, renders view otherwise.
      * @throws \Cake\Network\Exception\NotFoundException When record not found.
      */
     public function edit($id = null)
     {
-        $domainsRecord = $this->DomainsRecords->get($id, [
+        $domainsrecord = $this->Domainsrecords->get($id, [
             'contain' => []
         ]);
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $domainsRecord = $this->DomainsRecords->patchEntity($domainsRecord, $this->request->data);
-            if ($this->DomainsRecords->save($domainsRecord)) {
-                $this->Flash->success(__('The domains record has been saved.'));
+            $domainsrecord = $this->Domainsrecords->patchEntity($domainsrecord, $this->request->data);
+            if ($this->Domainsrecords->save($domainsrecord)) {
+                $this->Flash->success(__('The domainsrecord has been saved.'));
                 return $this->redirect(['action' => 'index']);
             } else {
-                $this->Flash->error(__('The domains record could not be saved. Please, try again.'));
+                $this->Flash->error(__('The domainsrecord could not be saved. Please, try again.'));
             }
         }
-        $domains = $this->DomainsRecords->Domains->find('list', ['limit' => 200]);
-        $vendors = $this->DomainsRecords->Vendors->find('list', ['limit' => 200]);
-        $this->set(compact('domainsRecord', 'domains', 'vendors'));
-        $this->set('_serialize', ['domainsRecord']);
+        $this->set(compact('domainsrecord'));
+        $this->set('_serialize', ['domainsrecord']);
     }
 
     /**
      * Delete method
      *
-     * @param string|null $id Domains Record id.
+     * @param string|null $id Domainsrecord id.
      * @return \Cake\Network\Response|null Redirects to index.
      * @throws \Cake\Network\Exception\NotFoundException When record not found.
      */
     public function delete($id = null)
     {
         $this->request->allowMethod(['post', 'delete']);
-        $domainsRecord = $this->DomainsRecords->get($id);
-        if ($this->DomainsRecords->delete($domainsRecord)) {
-            $this->Flash->success(__('The domains record has been deleted.'));
+        $domainsrecord = $this->Domainsrecords->get($id);
+        if ($this->Domainsrecords->delete($domainsrecord)) {
+            $this->Flash->success(__('The domainsrecord has been deleted.'));
         } else {
-            $this->Flash->error(__('The domains record could not be deleted. Please, try again.'));
+            $this->Flash->error(__('The domainsrecord could not be deleted. Please, try again.'));
         }
         return $this->redirect(['action' => 'index']);
     }
