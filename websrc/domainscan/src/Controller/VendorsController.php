@@ -52,7 +52,10 @@ class VendorsController extends AppController
     public function view($id = null)
     {
         $vendor = $this->Vendors->get($id, [
-            'contain' => ['VendorsMxs', 'Users', 'Stats']
+            'contain' => ['VendorsMxs', 'Users', 'Stats' => [
+				'sort' => ['Stats.date' => 'DESC']
+			]
+		]
         ]);
 
 	$domains = $this->Vendors->Domains->find()->where(['vendor_id' => $id]);
