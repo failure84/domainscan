@@ -12,12 +12,12 @@ vendoirIDS = unique(data$vendor)
 for(i in vendoirIDS){
 	singleData <- subset(data, vendor == i)
 	ggplot(data=singleData, aes(time, total)) +
-		scale_x_date(date_labels="%Y-%m-%d",date_breaks="1 day") +
+		#scale_x_date(date_labels="%Y-%m-%d",date_breaks="1 day") +
 		theme(
 			axis.text.x = element_text(angle=65, vjust=0.6),
 			legend.title=element_text(size=6)
 		) +
-		scale_y_continuous(limits = c(0, 12000000)) +
+		#scale_y_continuous(limits = c(0, 12000000)) +
 		geom_line() +
 		geom_point(colour="#134a72",aes(y= total), size=2, shape=21, fill="#2576b0") +
 		geom_text(

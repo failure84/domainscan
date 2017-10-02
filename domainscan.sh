@@ -20,6 +20,10 @@ mysql -u root -pPASSWORD -e "update domains set vendor_id = IFNULL((select vendo
 
 mysql -u root -pPASSWORD -e "insert into stats ( id, date, vendor_id, total_domains) SELECT NULL, NOW(), Vendors.id, (     COUNT(Domains.id)   ) AS total_domains  FROM    vendors Vendors    INNER JOIN domains Domains ON Vendors.id = (Domains.vendor_id)  GROUP BY    Domains.vendor_id  ORDER BY    total_domains DESC;" domainscan
 
+mysql -u root -pPASSWORD -e "select vendor_id,UNIX_TIMESTAMP(date) as time,total_domains from stats order by vendor_id,date;" domainscan | sed 's/\t/,/g' > r.data
+
+Rscript --verbose make_graphs_vendors.r
+
 #mysql -u root -pPASSWORD -e "delete from domains_records where created < DATE_ADD(DATE(NOW()), INTERVAL -7 DAY);" domainscan
 
 echo "done"
