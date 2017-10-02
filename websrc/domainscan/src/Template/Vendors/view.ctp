@@ -35,6 +35,10 @@
         <h4><?= __('Comment') ?></h4>
         <?= $this->Text->autoParagraph(h($vendor->comment)); ?>
     </div>
+    <div class="row">
+        <h4><?= __('Graph') ?></h4>
+        <?= $this->Html->image('domain_'.$vendor->id.'.png', ['alt' => $vendor->id]); ?>
+    </div>
     <div class="related">
         <h4><?= __('Related Vendors Mxs') ?></h4>
         <?php if (!empty($vendor->vendors_mxs)): ?>

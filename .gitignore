@@ -1,4 +1,6 @@
 websrc/domainscan/logs/
 websrc/domainscan/tmp/
+websrc/domainscan/webroot/img/
 domainscan_local.sh
 domainscan.log
+r.data
