@@ -2,7 +2,8 @@
 [![Code: Perl](https://img.shields.io/badge/Code-Perl-green.svg?style=flat)](http://www.perl.org)
 [![Code: PHP](https://img.shields.io/badge/Code-PHP-green.svg?style=flat)](http://www.php.net)
 [![Code: R](https://img.shields.io/badge/Code-R-green.svg?style=flat)](https://www.r-project.org)
-[![Code: GGPlot2](https://img.shields.io/badge/Code-GGPlot2-green.svg?style=flat)](http://ggplot2.org)
+[![Framework: GGPlot2](https://img.shields.io/badge/Framework-GGPlot2-blue.svg?style=flat)](http://ggplot2.org)
+[![Framework: CakePHP](https://img.shields.io/badge/Framework-CakePHP-blue.svg?style=flat)](http://cakephp.org)
 
 
 # domainscan
