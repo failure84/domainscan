@@ -1,5 +1,9 @@
 # domainscan
+Collecting historical data about domains.
 
+This is a service not a right.
+
+GPL
 
 # DB config
 ```
