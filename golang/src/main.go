@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -17,11 +18,11 @@ var mysqlPassword string
 type Domainscaner interface {
 	mx(string) ([]*net.MX, error)
 	iplookup(string) ([]net.IP, error)
-	checkForRecord(uint64, string, uint16) uint64
-	updateTime(uint64) error
-	insertRecord(uint64, string, uint16) error
+	checkForRecord(int, string, uint16) int
+	updateTime(int) error
+	insertRecord(int, string, uint16) error
 	connect() *sql.DB
-	mainParser(chan bool)
+	mainParser(int, int, int, chan int)
 }
 
 // Domainscan interface
@@ -31,7 +32,7 @@ type Domainscan struct {
 
 // Domain mysql structure
 type domains struct {
-	ID     uint64 `json:"id"`
+	ID     int    `json:"id"`
 	Name   string `json:"name"`
 	Errors uint16 `json:"errors"`
 }
@@ -43,9 +44,7 @@ func New() Domainscaner {
 
 func (ds *Domainscan) mx(domain string) ([]*net.MX, error) {
 	mx, err := net.LookupMX(domain)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "[E] Error resolving MX: %v\n", err)
-	}
+
 	return mx, err
 }
 
@@ -54,16 +53,13 @@ func (ds *Domainscan) iplookup(domain string) ([]net.IP, error) {
 	return ip, err
 }
 
-func (ds *Domainscan) updateTime(domainRecordID uint64) error {
+func (ds *Domainscan) updateTime(domainRecordID int) error {
 	_, err := ds.db.Exec("UPDATE domains_records set modified = NOW() WHERE id = ?", domainRecordID)
-	if err != nil {
-		fmt.Printf("[E] Error updating time on %d with error: %v\n", domainRecordID, err)
-	}
 
 	return err
 }
 
-func (ds *Domainscan) updateErrorCount(domainID uint64, ok bool) error {
+func (ds *Domainscan) updateErrorCount(domainID int, ok bool) error {
 	var err error
 	if ok {
 		_, err = ds.db.Exec("UPDATE domains set errors = 0 WHERE id = ?", domainID)
@@ -74,7 +70,7 @@ func (ds *Domainscan) updateErrorCount(domainID uint64, ok bool) error {
 	return err
 }
 
-func (ds *Domainscan) insertRecord(domainID uint64, mxHost string, MxPref uint16) error {
+func (ds *Domainscan) insertRecord(domainID int, mxHost string, MxPref uint16) error {
 	_, err := ds.db.Exec("INSERT INTO domains_records SET domain_id = ?, name = ?, value = ?, type = ?, created = NOW(), modified = NOW()", domainID, mxHost, MxPref, "MX")
 
 	if err != nil {
@@ -86,8 +82,8 @@ func (ds *Domainscan) insertRecord(domainID uint64, mxHost string, MxPref uint16
 	return err
 }
 
-func (ds *Domainscan) checkForRecord(domainID uint64, domainMx string, domainMxPref uint16) uint64 {
-	var id uint64
+func (ds *Domainscan) checkForRecord(domainID int, domainMx string, domainMxPref uint16) int {
+	var id int
 	ds.db.QueryRow("SELECT id FROM domains_records WHERE domain_id = ? AND name = ? AND value = ?", domainID, domainMx, domainMxPref).Scan(&id)
 
 	if id != 0 {
@@ -99,7 +95,7 @@ func (ds *Domainscan) checkForRecord(domainID uint64, domainMx string, domainMxP
 
 func (ds *Domainscan) connect() *sql.DB {
 	var err error
-	ds.db, err = sql.Open("mysql", "domainscan:" + mysqlPassword + "N@tcp(db-01.nactum.lan:3306)/domainscan")
+	ds.db, err = sql.Open("mysql", "domainscan:"+mysqlPassword+"@tcp(db-01.nactum.lan:3306)/domainscan")
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -112,16 +108,16 @@ func (ds *Domainscan) connect() *sql.DB {
 	return ds.db
 }
 
-func (ds *Domainscan) mainParser(channel1 chan bool) {
+func (ds *Domainscan) mainParser(cpu int, limit1 int, limit2 int, c chan int) {
 	fmt.Println("Starting Domainscanner...")
 
 	db := ds.connect()
 	defer db.Close()
 	db.SetMaxOpenConns(50)
-	//db.SetMaxIdleConns(2)
-	//db.SetConnMaxLifetime(100 * time.Second)
+	db.SetMaxIdleConns(0)
+	db.SetConnMaxLifetime(10 * time.Second)
 
-	results, err := db.Query("SELECT id,name,errors FROM domains WHERE errors <= 5 LIMIT 500000")
+	results, err := db.Query("SELECT id,name,errors FROM domains WHERE errors <= 5 LIMIT ?, ?", limit1, limit2)
 	if err != nil {
 		panic(err.Error()) // proper error handling instead of panic in your app
 	}
@@ -136,7 +132,7 @@ func (ds *Domainscan) mainParser(channel1 chan bool) {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
 		// and then print out the tag's Name attribute
-		fmt.Printf("[*] DID: %d name: %s errors: %d\n", domain.ID, domain.Name, domain.Errors)
+		fmt.Printf("[%d] DID: %d name: %s errors: %d\n", cpu, domain.ID, domain.Name, domain.Errors)
 		getMx, err := ds.mx(domain.Name)
 
 		if err != nil {
@@ -148,33 +144,57 @@ func (ds *Domainscan) mainParser(channel1 chan bool) {
 		}
 
 		for _, mx := range getMx {
-			fmt.Printf("[*] DID: %d\tMX: %s Prio: %d Status: ", domain.ID, mx.Host, mx.Pref)
 			mxHost := strings.TrimRight(mx.Host, ".")
 			domainRecordID := ds.checkForRecord(domain.ID, mxHost, mx.Pref)
 			if domainRecordID != 0 {
-				fmt.Printf("Found MX in DB, ID: %d.\n", domainRecordID)
+				fmt.Printf("[%d] DID: %d\tMX: %s Prio: %d Status: OldMX, ID: %d.\n", cpu, domain.ID, mx.Host, mx.Pref, domainRecordID)
 				err := ds.updateTime(domainRecordID)
 				if err != nil {
 					fmt.Printf("[E] DID: %d\t\tFailed to update time for record: %d", domain.ID, domainRecordID)
 				}
 			} else {
-				fmt.Printf("No MX found in DB.\n")
+				fmt.Printf("[%d] DID: %d\tMX: %s Prio: %d Status: NewMX.\n", cpu, domain.ID, mx.Host, mx.Pref)
 				ds.insertRecord(domain.ID, mxHost, mx.Pref)
 			}
 
 		}
 	}
-	channel1 <- true
+	c <- 1 // signal that this piece is done
 }
 
 func main() {
+	const numCPU = 8
+
+	roof := 0
+	floor := 0
+
+	fmt.Printf("MySQL Password: %s\n", mysqlPassword)
 	ds := New()
 
-	channel1 := make(chan bool)
+	c := make(chan int, numCPU)
 
-	go ds.mainParser(channel1)
+	// This is where we define how many records per run on x cores of cpu
+	Reruns := 1500000
 
-	if <-channel1 {
-		fmt.Printf("Done.\n")
+	Runs := (13000000 / numCPU) / Reruns
+
+	base := Runs
+
+	fmt.Printf("Runs per CPU: %d\n", Runs)
+
+	for o := 0; o < int(Reruns); o++ {
+		fmt.Fprintf(os.Stderr, "Run: %d\n", o)
+		for i := 0; i < numCPU; i++ {
+			roof = roof + base
+			diff := roof - floor
+			fmt.Fprintf(os.Stderr, "CPU: %d: %d - %d diff: %d\n", i, floor, roof, diff)
+			go ds.mainParser(i, floor, roof, c)
+			floor = floor + base
+
+		}
+		for w := 0; w < numCPU; w++ {
+			<-c // wait for one task to complete
+		}
+		return
 	}
 }
