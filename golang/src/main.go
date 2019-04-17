@@ -163,38 +163,36 @@ func (ds *Domainscan) mainParser(cpu int, limit1 int, limit2 int, c chan int) {
 }
 
 func main() {
+	// How many CPU do you have?
 	const numCPU = 8
+	// This is where we define how many records per run on x cores of cpu
+	const Reruns = 1500
 
+	// Make Channels
+	c := make(chan int, numCPU)
+
+	// Calculate base.
+	base := (13000000 / numCPU) / Reruns
+
+	// set roof and floor to zero
 	roof := 0
 	floor := 0
 
-	fmt.Printf("MySQL Password: %s\n", mysqlPassword)
+	// The Object.
 	ds := New()
 
-	c := make(chan int, numCPU)
-
-	// This is where we define how many records per run on x cores of cpu
-	Reruns := 1500000
-
-	Runs := (13000000 / numCPU) / Reruns
-
-	base := Runs
-
-	fmt.Printf("Runs per CPU: %d\n", Runs)
-
 	for o := 0; o < int(Reruns); o++ {
-		fmt.Fprintf(os.Stderr, "Run: %d\n", o)
 		for i := 0; i < numCPU; i++ {
 			roof = roof + base
 			diff := roof - floor
-			fmt.Fprintf(os.Stderr, "CPU: %d: %d - %d diff: %d\n", i, floor, roof, diff)
+			fmt.Fprintf(os.Stderr, "Run: %d CPU: %d: %d - %d diff: %d base: %d\n", o, i, floor, roof, diff, base)
 			go ds.mainParser(i, floor, roof, c)
 			floor = floor + base
 
 		}
 		for w := 0; w < numCPU; w++ {
 			<-c // wait for one task to complete
+			fmt.Printf("CPU: %d is done.\n", w)
 		}
-		return
 	}
 }
