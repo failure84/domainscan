@@ -22,7 +22,7 @@ type Domainscaner interface {
 	updateTime(int) error
 	insertRecord(int, string, uint16) error
 	connect() *sql.DB
-	mainParser(int, int, int, chan int)
+	mainParser(int, int, int, int, chan int)
 }
 
 // Domainscan interface
@@ -108,23 +108,18 @@ func (ds *Domainscan) connect() *sql.DB {
 	return ds.db
 }
 
-func (ds *Domainscan) mainParser(cpu int, limit1 int, limit2 int, c chan int) {
-	fmt.Println("Starting Domainscanner...")
+// not a pointer need a object per thread.
+func (ds *Domainscan) mainParser(run int, cpu int, limit1 int, limit2 int, c chan int) {
+	results, err := ds.db.Query("SELECT id,name,errors FROM domains WHERE errors <= 5 AND id BETWEEN ? AND ?", limit1, limit2)
 
-	db := ds.connect()
-	defer db.Close()
-	db.SetMaxOpenConns(50)
-	db.SetMaxIdleConns(0)
-	db.SetConnMaxLifetime(10 * time.Second)
-
-	results, err := db.Query("SELECT id,name,errors FROM domains WHERE errors <= 5 LIMIT ?, ?", limit1, limit2)
 	if err != nil {
-		panic(err.Error()) // proper error handling instead of panic in your app
+		log.Fatal(err.Error())
 	}
 
-	defer results.Close()
+	//	defer results.Close()
 
 	for results.Next() {
+		//time.Sleep(500 * time.Millisecond)
 		var domain domains
 		// for each row, scan the result into our tag composite object
 		err = results.Scan(&domain.ID, &domain.Name, &domain.Errors)
@@ -132,12 +127,12 @@ func (ds *Domainscan) mainParser(cpu int, limit1 int, limit2 int, c chan int) {
 			panic(err.Error()) // proper error handling instead of panic in your app
 		}
 		// and then print out the tag's Name attribute
-		fmt.Printf("[%d] DID: %d name: %s errors: %d\n", cpu, domain.ID, domain.Name, domain.Errors)
+		// fmt.Printf("[%d] DID: %d name: %s errors: %d\n", cpu, domain.ID, domain.Name, domain.Errors)
 		getMx, err := ds.mx(domain.Name)
 
 		if err != nil {
 			// update error count on domain.
-			fmt.Printf("[E] DID: %d Error looking up MX for %s updating error count.\n", domain.ID, domain.Name)
+			fmt.Printf("[%d:%d:%d] %s: Error looking up MX, updating error count.\n", run, cpu, domain.ID, domain.Name)
 			ds.updateErrorCount(domain.ID, false)
 		} else {
 			ds.updateErrorCount(domain.ID, true)
@@ -147,14 +142,19 @@ func (ds *Domainscan) mainParser(cpu int, limit1 int, limit2 int, c chan int) {
 			mxHost := strings.TrimRight(mx.Host, ".")
 			domainRecordID := ds.checkForRecord(domain.ID, mxHost, mx.Pref)
 			if domainRecordID != 0 {
-				fmt.Printf("[%d] DID: %d\tMX: %s Prio: %d Status: OldMX, ID: %d.\n", cpu, domain.ID, mx.Host, mx.Pref, domainRecordID)
+				fmt.Printf("[%d:%d:%d] %s:\tMX: %s Prio: %d Status: OldMX, ID: %d.\n", run, cpu, domain.ID, domain.Name, mx.Host, mx.Pref, domainRecordID)
 				err := ds.updateTime(domainRecordID)
 				if err != nil {
-					fmt.Printf("[E] DID: %d\t\tFailed to update time for record: %d", domain.ID, domainRecordID)
+					fmt.Fprintf(os.Stderr, "[%d:%d:%d] Error updating record for %s, err: %v\n", run, cpu, domain.ID, domain.Name, err)
+					//return
 				}
 			} else {
-				fmt.Printf("[%d] DID: %d\tMX: %s Prio: %d Status: NewMX.\n", cpu, domain.ID, mx.Host, mx.Pref)
-				ds.insertRecord(domain.ID, mxHost, mx.Pref)
+				fmt.Printf("[%d:%d:%d] %s:\tMX: %s Prio: %d Status: NewMX.\n", run, cpu, domain.ID, domain.Name, mx.Host, mx.Pref)
+				err := ds.insertRecord(domain.ID, mxHost, mx.Pref)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "[%d:%d:%d] Error inserting record for %s, err: %v\n", run, cpu, domain.ID, domain.Name, err)
+					//return
+				}
 			}
 
 		}
@@ -163,36 +163,41 @@ func (ds *Domainscan) mainParser(cpu int, limit1 int, limit2 int, c chan int) {
 }
 
 func main() {
-	// How many CPU do you have?
 	const numCPU = 8
-	// This is where we define how many records per run on x cores of cpu
-	const Reruns = 1500
 
-	// Make Channels
-	c := make(chan int, numCPU)
-
-	// Calculate base.
-	base := (13000000 / numCPU) / Reruns
-
-	// set roof and floor to zero
 	roof := 0
-	floor := 0
+	floor := 1
 
-	// The Object.
+	fmt.Printf("MySQL Password: %s\n", mysqlPassword)
 	ds := New()
 
-	for o := 0; o < int(Reruns); o++ {
+	c := make(chan int, numCPU)
+
+	// This is where we define how many records per run on x cores of cpu
+	Reruns := 750
+
+	base := (13000000 / numCPU) / Reruns
+
+	fmt.Printf("Runs per CPU: %d\n", base)
+	for o := 0; o < Reruns; o++ {
+		db := ds.connect()
+		db.SetMaxOpenConns(500)
+		db.SetMaxIdleConns(10)
+		db.SetConnMaxLifetime(60 * time.Second)
+
+		defer db.Close()
+
 		for i := 0; i < numCPU; i++ {
 			roof = roof + base
 			diff := roof - floor
-			fmt.Fprintf(os.Stderr, "Run: %d CPU: %d: %d - %d diff: %d base: %d\n", o, i, floor, roof, diff, base)
-			go ds.mainParser(i, floor, roof, c)
+			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Starting at: %v (%d - %d diff: %d)\n", o, i, time.Now(), floor, roof, diff)
+			go ds.mainParser(o, i, floor, roof, c)
 			floor = floor + base
 
 		}
 		for w := 0; w < numCPU; w++ {
 			<-c // wait for one task to complete
-			fmt.Printf("CPU: %d is done.\n", w)
+			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Done at: %v\n", o, w, time.Now())
 		}
 	}
 }
