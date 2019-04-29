@@ -19,6 +19,7 @@ type Domainscaner interface {
 	mx(string) ([]*net.MX, error)
 	iplookup(string) ([]net.IP, error)
 	checkForRecord(int, string, uint16) int
+	getMaxID() int
 	updateTime(int) error
 	insertRecord(int, string, uint16) error
 	connect() *sql.DB
@@ -93,6 +94,13 @@ func (ds *Domainscan) checkForRecord(domainID int, domainMx string, domainMxPref
 	return 0
 }
 
+func (ds *Domainscan) getMaxID() int {
+	var id int
+	ds.db.QueryRow("SELECT MAX(id) FROM domains").Scan(&id)
+
+	return id
+}
+
 func (ds *Domainscan) connect() *sql.DB {
 	var err error
 	ds.db, err = sql.Open("mysql", "domainscan:"+mysqlPassword+"@tcp(db-01.nactum.lan:3306)/domainscan")
@@ -159,27 +167,36 @@ func (ds *Domainscan) mainParser(run int, cpu int, limit1 int, limit2 int, c cha
 
 		}
 	}
-	c <- 1 // signal that this piece is done
+	c <- cpu // signal that this piece is done
+}
+
+func printLogo() {
+	fmt.Fprint(os.Stderr, " ______   _______  __   __  _______  ___   __    _  _______  _______  _______  __    _\n")
+	fmt.Fprint(os.Stderr, " |      | |       ||  |_|  ||   _   ||   | |  |  | ||       ||       ||   _   ||  |  | |\n")
+	fmt.Fprint(os.Stderr, " |  _    ||   _   ||       ||  |_|  ||   | |   |_| ||  _____||       ||  |_|  ||   |_| |\n")
+	fmt.Fprint(os.Stderr, " | | |   ||  | |  ||       ||       ||   | |       || |_____ |       ||       ||       |\n")
+	fmt.Fprint(os.Stderr, " | |_|   ||  |_|  ||       ||       ||   | |  _    ||_____  ||      _||       ||  _    |\n")
+	fmt.Fprint(os.Stderr, " |       ||       || ||_|| ||   _   ||   | | | |   | _____| ||     |_ |   _   || | |   |\n")
+	fmt.Fprint(os.Stderr, " |______| |_______||_|   |_||__| |__||___| |_|  |__||_______||_______||__| |__||_|  |__|\n\n")
 }
 
 func main() {
 	const numCPU = 8
-
 	roof := 0
 	floor := 1
-
-	fmt.Printf("MySQL Password: %s\n", mysqlPassword)
 	ds := New()
-
 	c := make(chan int, numCPU)
-
 	// This is where we define how many records per run on x cores of cpu
-	Reruns := 750
-
-	base := (13000000 / numCPU) / Reruns
-
-	fmt.Printf("Runs per CPU: %d\n", base)
-	for o := 0; o < Reruns; o++ {
+	Reruns := 300
+	dbMax := ds.connect()
+	maxID := ds.getMaxID()
+	dbMax.Close()
+	base := (maxID / numCPU) / Reruns
+	diff := base - floor
+	printLogo()
+	fmt.Fprintf(os.Stderr, "MySQL Password: %s\n", mysqlPassword)
+	fmt.Fprintf(os.Stderr, "Runs per CPU: %d MaxID: %d\n", diff, maxID)
+	for run := 0; run < Reruns; run++ {
 		db := ds.connect()
 		db.SetMaxOpenConns(500)
 		db.SetMaxIdleConns(10)
@@ -187,17 +204,18 @@ func main() {
 
 		defer db.Close()
 
-		for i := 0; i < numCPU; i++ {
+		for startCPU := 0; startCPU < numCPU; startCPU++ {
 			roof = roof + base
-			diff := roof - floor
-			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Starting at: %v (%d - %d diff: %d)\n", o, i, time.Now(), floor, roof, diff)
-			go ds.mainParser(o, i, floor, roof, c)
+			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Starting at: %v (%d - %d)\n", run, startCPU, time.Now().Format(time.UnixDate), floor, roof)
+			go ds.mainParser(run, startCPU, floor, roof, c)
 			floor = floor + base
 
 		}
-		for w := 0; w < numCPU; w++ {
-			<-c // wait for one task to complete
-			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Done at: %v\n", o, w, time.Now())
+		for areWeDone := 0; areWeDone < numCPU; areWeDone++ {
+			doneCPU := <-c // wait for one task to complete
+			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Scanned: %d at: %v\n", run, doneCPU, diff, time.Now().Format(time.UnixDate))
 		}
 	}
 }
+
+// END
