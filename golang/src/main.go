@@ -171,7 +171,7 @@ func (ds *Domainscan) mainParser(run int, cpu int, limit1 int, limit2 int, c cha
 }
 
 func printLogo() {
-	fmt.Fprint(os.Stderr, " ______   _______  __   __  _______  ___   __    _  _______  _______  _______  __    _\n")
+	fmt.Fprint(os.Stderr, "  ______   _______  __   __  _______  ___   __    _  _______  _______  _______  __    _\n")
 	fmt.Fprint(os.Stderr, " |      | |       ||  |_|  ||   _   ||   | |  |  | ||       ||       ||   _   ||  |  | |\n")
 	fmt.Fprint(os.Stderr, " |  _    ||   _   ||       ||  |_|  ||   | |   |_| ||  _____||       ||  |_|  ||   |_| |\n")
 	fmt.Fprint(os.Stderr, " | | |   ||  | |  ||       ||       ||   | |       || |_____ |       ||       ||       |\n")
