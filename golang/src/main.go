@@ -20,6 +20,7 @@ type Domainscaner interface {
 	iplookup(string) ([]net.IP, error)
 	checkForRecord(int, string, uint16) int
 	getMaxID() int
+	setVendor() error
 	updateTime(int) error
 	insertRecord(int, string, uint16) error
 	connect() *sql.DB
@@ -99,6 +100,32 @@ func (ds *Domainscan) getMaxID() int {
 	ds.db.QueryRow("SELECT MAX(id) FROM domains").Scan(&id)
 
 	return id
+}
+
+func (ds *Domainscan) setVendor() error {
+	var err error
+
+	_, err = ds.db.Exec("UPDATE domains_records AS DR SET DR.vendor_id = (select VM.vendor_id from vendors_mxs as VM WHERE DR.name LIKE CONCAT('%', VM.value))")
+	if err != nil {
+		return err
+	}
+
+	_, err = ds.db.Exec("UPDATE domains_records as DR SET DR.vendor_id = 1 WHERE DR.vendor_id IS NULL")
+	if err != nil {
+		return err
+	}
+
+	_, err = ds.db.Exec("UPDATE domains SET vendor_id = IFNULL((select vendor_id from domains_records WHERE domain_id = domains.id ORDER BY modified DESC limit 1), 1) where id = domains.id")
+	if err != nil {
+		return err
+	}
+
+	_, err = ds.db.Exec("INSERT INTO stats ( id, date, vendor_id, total_domains) SELECT NULL, NOW(), Vendors.id, (     COUNT(Domains.id)   ) AS total_domains  FROM    vendors Vendors    INNER JOIN domains Domains ON Vendors.id = (Domains.vendor_id)  GROUP BY    Domains.vendor_id  ORDER BY    total_domains DESC")
+	if err != nil {
+		return err
+	}
+
+	return err
 }
 
 func (ds *Domainscan) connect() *sql.DB {
@@ -216,6 +243,13 @@ func main() {
 			fmt.Fprintf(os.Stderr, "RUN: %d CPU: %d Scanned: %d at: %v\n", run, doneCPU, diff, time.Now().Format(time.UnixDate))
 		}
 	}
+	// Set vendors, make stats etc
+	dbVendor := ds.connect()
+	err := ds.setVendor()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[E] Vendor error, %v\n", err)
+	}
+	dbVendor.Close()
 }
 
 // END
