@@ -105,21 +105,31 @@ func (ds *Domainscan) getMaxID() int {
 func (ds *Domainscan) setVendor() error {
 	var err error
 
-	_, err = ds.db.Exec("UPDATE domains_records AS DR SET DR.vendor_id = (select VM.vendor_id from vendors_mxs as VM WHERE DR.name LIKE CONCAT('%', VM.value))")
+	// match domains_records MX with a vendor
+	_, err = ds.db.Exec("UPDATE domains_records AS DR SET DR.vendor_id = (select VM.vendor_id from vendors_mxs as VM WHERE DR.name LIKE CONCAT('%', VM.value) LIMIT 1)")
 	if err != nil {
 		return err
 	}
 
+	// set vendor self hosted when mx is like domain
+	_, err = ds.db.Exec("UPDATE domains_records AS DR JOIN domains as D on D.id = DR.domain_id set DR.vendor_id = 2 where D.name LIKE CONCAT('%', DR.name)")
+	if err != nil {
+		return err
+	}
+
+	// set vendor to unknown when there is no vendor
 	_, err = ds.db.Exec("UPDATE domains_records as DR SET DR.vendor_id = 1 WHERE DR.vendor_id IS NULL")
 	if err != nil {
 		return err
 	}
 
-	_, err = ds.db.Exec("UPDATE domains SET vendor_id = IFNULL((select vendor_id from domains_records WHERE domain_id = domains.id ORDER BY modified DESC limit 1), 1) where id = domains.id")
+	// set latest vendor on domain
+	_, err = ds.db.Exec("UPDATE domains SET vendor_id = IFNULL((select vendor_id from domains_records WHERE domain_id = domains.id ORDER BY modified DESC limit 1), 1)")
 	if err != nil {
 		return err
 	}
 
+	// generate stats
 	_, err = ds.db.Exec("INSERT INTO stats ( id, date, vendor_id, total_domains) SELECT NULL, NOW(), Vendors.id, (     COUNT(Domains.id)   ) AS total_domains  FROM    vendors Vendors    INNER JOIN domains Domains ON Vendors.id = (Domains.vendor_id)  GROUP BY    Domains.vendor_id  ORDER BY    total_domains DESC")
 	if err != nil {
 		return err
@@ -214,7 +224,7 @@ func main() {
 	ds := New()
 	c := make(chan int, numCPU)
 	// This is where we define how many records per run on x cores of cpu
-	Reruns := 300
+	Reruns := 150
 	dbMax := ds.connect()
 	maxID := ds.getMaxID()
 	dbMax.Close()
