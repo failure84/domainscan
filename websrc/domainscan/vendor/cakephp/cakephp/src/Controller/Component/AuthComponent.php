@@ -284,7 +284,7 @@ class AuthComponent extends Component
             return null;
         }
 
-        /* @var \Cake\Controller\Controller $controller */
+        /** @var \Cake\Controller\Controller $controller */
         $controller = $event->getSubject();
 
         $action = strtolower($controller->request->getParam('action'));
@@ -392,8 +392,6 @@ class AuthComponent extends Component
                 $this->_config['ajaxLogin'],
                 $this->RequestHandler->ajaxLayout
             );
-
-            return $response->withStatus(403);
         }
 
         return $response->withStatus(403);
@@ -877,7 +875,7 @@ class AuthComponent extends Component
      *
      * @param \Cake\Auth\Storage\StorageInterface|null $storage Sets provided
      *   object as storage or if null returns configured storage object.
-     * @return \Cake\Auth\Storage\StorageInterface|null
+     * @return \Cake\Auth\Storage\StorageInterface|\Cake\Core\InstanceConfigTrait|null
      */
     public function storage(StorageInterface $storage = null)
     {

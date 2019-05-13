@@ -78,12 +78,12 @@ class CsrfComponent extends Component
      */
     public function startup(Event $event)
     {
+        /** @var \Cake\Controller\Controller $controller */
         $controller = $event->getSubject();
         $request = $controller->request;
         $response = $controller->response;
         $cookieName = $this->_config['cookieName'];
 
-        /* @var \Cake\Http\ServerRequest $request */
         $cookieData = $request->getCookie($cookieName);
         if ($cookieData) {
             $request->params['_csrfToken'] = $cookieData;
@@ -157,7 +157,7 @@ class CsrfComponent extends Component
             throw new InvalidCsrfTokenException(__d('cake', 'Missing CSRF token cookie'));
         }
 
-        if ($post !== $cookie && $header !== $cookie) {
+        if (!Security::constantEquals($post, $cookie) && !Security::constantEquals($header, $cookie)) {
             throw new InvalidCsrfTokenException(__d('cake', 'CSRF token mismatch.'));
         }
     }

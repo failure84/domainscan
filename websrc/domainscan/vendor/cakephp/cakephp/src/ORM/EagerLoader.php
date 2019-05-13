@@ -16,6 +16,7 @@ namespace Cake\ORM;
 
 use Cake\Database\Statement\BufferedStatement;
 use Cake\Database\Statement\CallbackStatement;
+use Cake\Datasource\QueryInterface;
 use Closure;
 use InvalidArgumentException;
 
@@ -238,7 +239,7 @@ class EagerLoader
         }
 
         if (!isset($options['joinType'])) {
-            $options['joinType'] = 'INNER';
+            $options['joinType'] = QueryInterface::JOIN_TYPE_INNER;
         }
 
         $assocs = explode('.', $assoc);
@@ -397,7 +398,7 @@ class EagerLoader
 
             $pointer += [$table => []];
 
-            if (isset($options['queryBuilder']) && isset($pointer[$table]['queryBuilder'])) {
+            if (isset($options['queryBuilder'], $pointer[$table]['queryBuilder'])) {
                 $first = $pointer[$table]['queryBuilder'];
                 $second = $options['queryBuilder'];
                 $options['queryBuilder'] = function ($query) use ($first, $second) {

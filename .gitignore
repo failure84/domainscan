@@ -4,3 +4,8 @@ websrc/domainscan/webroot/img/
 domainscan_local.sh
 domainscan.log
 r.data
+scan_file_domains_local.pl
+golang/domainscan*.log
+golang/domainscan*.debug
+golang/bin
+golang/src/github.com/
