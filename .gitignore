@@ -1,10 +1,9 @@
 websrc/domainscan/logs/
 websrc/domainscan/tmp/
 websrc/domainscan/webroot/img/
-domainscan_local.sh
-domainscan.log
-r.data
-scan_file_domains_local.pl
+scripts/domainscan_local.sh
+tmp/r.data
+perl/scan_file_domains_local.pl
 golang/domainscan*.log
 golang/domainscan*.debug
 golang/bin

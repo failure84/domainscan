@@ -1,7 +1,7 @@
 library(Rcpp)
 library(anytime)
 library(ggplot2)
-csvData <- read.csv("r.data")
+csvData <- read.csv("../tmp/r.data")
 data <- as.data.frame(csvData)
 #print(data)
 names(data)[1]="vendor"
