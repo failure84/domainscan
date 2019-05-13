@@ -8,13 +8,15 @@ use DBI;
 use DBD::mysql;
 use Net::DNS;
 use Parallel::ForkManager;
+use Time::HiRes qw(time);
+use List::MoreUtils 'part';
 
 # Variables
-my $MAX_PROCESSES = 50;
+my $MAX_PROCESSES = 5;
 my $VERSION = '2.0';
 my $DEBUG = 0;
 
-my $Limit = 8000000;
+my $Limit = 800;
 my $StartTime = time;
 
 # STATS
@@ -28,14 +30,15 @@ print "Written by Patrik Båt <patrik.bat\@nactum.se>\n";
 
 # MySQL
 my $database = 'domainscan';
-my $hostname = 'localhost';
+#my $hostname = 'db-01.nactum.lan';
+my $hostname = '192.168.130.110';
 my $port = 3306;
 my $username = 'domainscan';
-my $password = 'PASSWORD';
+my $password = 'ZEaJwTOSfbCiePgN';
 my $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
 my $dbh = DBI->connect($dsn, $username, $password)
 	or die "Unable to connect to MySQL at $hostname.\n";
-my $domains = $dbh->prepare("SELECT id,name,errors FROM domains WHERE errors < 5 ORDER BY RAND() LIMIT $Limit"); # domains list
+my $domains = $dbh->prepare("SELECT id,name,errors FROM domains WHERE errors < 5 ORDER BY RAND() LIMIT 4000000"); # domains list
 
 # constructs
 my $lookup = Net::DNS::Resolver->new;
@@ -46,23 +49,24 @@ sub insert_records($$$$) {
 	# insert domains_records
 	my ($domain_id, $name, $value, $type) = @_; 
 
-	my $dbh = DBI->connect($dsn, $username, $password) or die; 
-	my $insert = $dbh->prepare('INSERT INTO domains_records SET domain_id = ?, name = ?, value = ?, type = ?, created = NOW(), modified = NOW()');
-	my $status = $insert->execute($domain_id, $name, $value, $type)
-		or die $dbh->errstr;
-	$insert->finish();
-	$dbh->disconnect();
-	return $status;
+	#my $dbh = DBI->connect($dsn, $username, $password) or die; 
+	my $child_dbh = $dbh->clone();
+	my $insert = $child_dbh->prepare('INSERT INTO domains_records SET domain_id = ?, name = ?, value = ?, type = ?, created = NOW(), modified = NOW()');
+        my $status = $insert->execute($domain_id, $name, $value, $type)
+                or die $child_dbh->errstr;
+        $insert->finish();
+	$child_dbh->disconnect();
 }
 
 sub check_for_record($$$$) {
 	# search for the same domains_records
 	my ($domain_id, $name, $value, $type) = @_;
 
-	my $dbh = DBI->connect($dsn, $username, $password) or die; 
-	my $select = $dbh->prepare("SELECT id FROM domains_records WHERE domain_id = ? AND name = ? AND value = ? AND type = ?");
+	my $child_dbh = $dbh->clone();
+	#my $dbh = DBI->connect($dsn, $username, $password) or die; 
+	my $select = $child_dbh->prepare("SELECT id FROM domains_records WHERE domain_id = ? AND name = ? AND value = ? AND type = ?");
 	$select->execute($domain_id, $name, $value, $type)
-		or die $dbh->errstr;
+		or die $child_dbh->errstr;
 
 	my $domains_records_id = 0;
 	my @domains_records_id = $select->fetchrow_array();
@@ -70,6 +74,7 @@ sub check_for_record($$$$) {
 		$domains_records_id += $domains_records_id[0];
 	}
 	$select->finish();
+	$child_dbh->disconnect();
 	return $domains_records_id;
 }
 
@@ -78,48 +83,51 @@ sub dns_error($$) {
 	my ($id, $clear) = @_;
 	# clear, 1 = set errors to 0
 	# clear, 0 = error + 1
-	my $status;
 
-	my $dbh = DBI->connect($dsn, $username, $password) or die; 
+	#my $dbh = DBI->connect($dsn, $username, $password) or die; 
+	my $child_dbh = $dbh->clone();
 	if ($clear) {
-		$status = $dbh->do("UPDATE domains set errors = 0 WHERE id = $id")
-			or die $dbh->errstr;
+		$child_dbh->do("UPDATE domains set errors = 0 WHERE id = $id")
+			or die $child_dbh->errstr;
 	} else {
-		$status = $dbh->do("UPDATE domains set errors = errors + 1 WHERE id = $id")
-			or die $dbh->errstr;
+		$child_dbh->do("UPDATE domains set errors = errors + 1 WHERE id = $id")
+			or die $child_dbh->errstr;
 	}
-	$dbh->disconnect();
-	return $status;
+	$child_dbh->disconnect();
 }
 
 sub new_mx($) {
 	# tell domains we have a new MX
 	my $id = shift;
 
-	my $dbh = DBI->connect($dsn, $username, $password) or die; 
-	my $status = $dbh->do("UPDATE domains set errors = 0, new_mx = NOW() WHERE id = $id")
-		or die $dbh->errstr;
-
-	$dbh->disconnect();
-	return $status;
+	#my $dbh = DBI->connect($dsn, $username, $password) or die; 
+	my $child_dbh = $dbh->clone();
+	my $status = $child_dbh->do("UPDATE domains set errors = 0, new_mx = NOW() WHERE id = $id")
+		or die $child_dbh->errstr;
+	$child_dbh->disconnect();
 }
 
 sub update_current_time($) {
 	# update modified to NOW for domains_records
 	my $domains_records_id = shift;
 
-	my $dbh = DBI->connect($dsn, $username, $password) or die;
-	my $status = $dbh->do("UPDATE domains_records set modified = NOW() WHERE id = $domains_records_id")
-		or die $dbh->errstr;
+	my $child_dbh = $dbh->clone();
+	
+	$child_dbh->do("UPDATE domains_records set modified = NOW() WHERE id = $domains_records_id")
+		or die $child_dbh->errstr;
 
-	$dbh->disconnect();
-	return $status;
+	$child_dbh->disconnect();
 }
 
 $pm->run_on_start( sub {
 	my ($pid, $ident)=@_;
 	print "** $ident started, pid: $pid, time: " . time . "\n";
 });
+
+$pm->run_on_wait( sub {
+	my $pid = shift;
+	print "** Have to wait for children ...\n"
+}, 0.5);
 
 $pm->run_on_finish( sub {
  my ($pid, $exit_code, $ident, $exit_signal, $core_dump, $data_structure_reference) = @_;
@@ -131,77 +139,99 @@ $pm->run_on_finish( sub {
 	$stats_new = $stats_new + $child_stats_new;
 	$stats_old = $stats_old + $child_stats_old;
 	$stats_error = $stats_error + $child_stats_error;
+        print "** $ident just got out of the pool ".
+          "with PID $pid and exit code: $exit_code\n";
       }
       else {  # problems occurring during storage or retrieval will throw a warning
         print qq|No message received from child process $pid!\n|;
       }
-});
+}); 
+
 
 # fetch domains
 $domains->execute()
 		or die $dbh->errstr;
 
+# Part data
+my $i = 0;
+my @parts = part { $i++ % $MAX_PROCESSES } @{ $domains->fetchall_arrayref() };
+$dbh->disconnect();
+
+my $child = 0;
 print "Start MainParser and fork.\n";
-DOMAINSCAN:
-while (my $domain = $domains->fetchrow_hashref) {
+#DOMAINSCAN:
+foreach my $part (@parts) {
+	$child++;
 	# run jobs in pararell
-	my $pid = $pm->start($domain->{'name'}) and next DOMAINSCAN;
+	my $pid = $pm->start($child) and next; #DOMAINSCAN;
 	my $child_start = time;
 
-	# STATS
 	my $child_stats_new = 0;
 	my $child_stats_old = 0;
 	my $child_stats_error = 0;
 
-	# print info
-	print " ** $domain->{'name'}, id: ($domain->{'id'}), mx: ";
+	while (my $domain = shift @$part) {
+		$dbh->{InactiveDestroy} = 1;
+		our $domain_id = $domain->[0];
+		our $domain_name = $domain->[1];
+		our $domain_errors = $domain->[2];
 
-	# do MX lookup
-	my @mx = mx($lookup, $domain->{'name'});
-	if (!@mx) {
-		# no MX found
-		$child_stats_error++;
-		print "mx lookup error ";
-		dns_error($domain->{'id'}, 0);
-	} else {
-		# MX found
-		print "found mx, DRI: ( ";
-		foreach my $mx (@mx) {
-			# loop thru all MXes
 
-			# check if there is already a record.
-			my $domains_records_id = check_for_record($domain->{'id'}, $mx->exchange, $mx->preference, 'MX');
-			if ($domains_records_id gt 0) {
-				# if it exists update modifed to NOW
-				$child_stats_old++;
-				print "old(" . $domains_records_id . ") ";
-				update_current_time($domains_records_id);
+		# STATS
 
-				if ($domain->{'errors'} gt 0) {
-					# if there was an error before lets clear the error count
-					dns_error($domain->{'id'}, 1);
+		# print info
+		print " ** child: $child domain: $domain_name, id: ($domain_id), mx: ";
+
+		# do MX lookup
+		my @mx = mx($lookup, $domain_name);
+		if (!@mx) {
+			# no MX found
+			$child_stats_error++;
+			print "mx lookup error ";
+			dns_error($domain_id, 0);
+		} else {
+			# MX found
+			print "found mx, DRI: ( ";
+			foreach my $mx (@mx) {
+				# loop thru all MXes
+
+				# check if there is already a record.
+				my $domains_records_id = check_for_record($domain_id, $mx->exchange, $mx->preference, 'MX');
+				if ($domains_records_id gt 0) {
+					# if it exists update modifed to NOW
+					$child_stats_old++;
+					print "old(" . $domains_records_id . ") ";
+					update_current_time($domains_records_id);
+
+					if ($domain_errors gt 0) {
+						# if there was an error before lets clear the error count
+						dns_error($domain_id, 1);
+					}
+				} else {
+					$child_stats_new++;
+					# if it dosnt exists insert it and tell domains that it has a new MX
+					print "new(" . $domains_records_id . ") ";
+					insert_records($domain_id, $mx->exchange, $mx->preference, 'MX');
+					new_mx($domain_id); 
 				}
-			} else {
-				$child_stats_new++;
-				# if it dosnt exists insert it and tell domains that it has a new MX
-				print "new(" . $domains_records_id . ") ";
-				insert_records($domain->{'id'}, $mx->exchange, $mx->preference, 'MX');
-				new_mx($domain->{'id'}); 
 			}
 		}
-		print ") ";
+		print ")\n";
 	}
 	# runtime
 	my $child_end = time;
 	my $runtime = $child_end - $child_start;
 	print "runtime: " . $runtime . "\n";
-
-	# print stats
 	my $stats = "$child_stats_new,$child_stats_old,$stats_error";
+	# print stats
 	$pm->finish(0, \$stats); # Terminates the child process
 }
 # wait for all the cildren
-$pm->wait_all_children();
+#$pm->wait_all_children();
+#$pm->wait_for_available_procs();
+print "Waiting for Children...\n";
+$pm->wait_all_children;
+print "Everybody is out of the pool!\n";
 
 # end
 $domains->finish();
