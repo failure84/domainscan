@@ -29,10 +29,10 @@ class LogPanel extends DebugPanel
      */
     public function initialize()
     {
-        if (Log::config('debug_kit_log_panel')) {
+        if (Log::getConfig('debug_kit_log_panel')) {
             return;
         }
-        Log::config('debug_kit_log_panel', [
+        Log::setConfig('debug_kit_log_panel', [
             'engine' => 'DebugKit.DebugKit',
         ]);
     }
@@ -45,7 +45,7 @@ class LogPanel extends DebugPanel
     public function data()
     {
         return [
-            'logger' => Log::engine('debug_kit_log_panel')
+            'logger' => Log::engine('debug_kit_log_panel'),
         ];
     }
 

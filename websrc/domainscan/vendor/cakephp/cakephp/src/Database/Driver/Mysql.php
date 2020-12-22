@@ -20,11 +20,12 @@ use Cake\Database\Query;
 use Cake\Database\Statement\MysqlStatement;
 use PDO;
 
+/**
+ * Class Mysql
+ */
 class Mysql extends Driver
 {
-
     use MysqlDialectTrait;
-    use PDODriverTrait;
 
     /**
      * Base configuration settings for MySQL driver
@@ -39,7 +40,7 @@ class Mysql extends Driver
         'database' => 'cake',
         'port' => '3306',
         'flags' => [],
-        'encoding' => 'utf8',
+        'encoding' => 'utf8mb4',
         'timezone' => null,
         'init' => [],
     ];
@@ -104,7 +105,7 @@ class Mysql extends Driver
         $this->_connect($dsn, $config);
 
         if (!empty($config['init'])) {
-            $connection = $this->connection();
+            $connection = $this->getConnection();
             foreach ((array)$config['init'] as $command) {
                 $connection->exec($command);
             }
@@ -120,7 +121,7 @@ class Mysql extends Driver
      */
     public function enabled()
     {
-        return in_array('mysql', PDO::getAvailableDrivers());
+        return in_array('mysql', PDO::getAvailableDrivers(), true);
     }
 
     /**

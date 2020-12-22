@@ -27,7 +27,6 @@ use PDO;
  */
 class StringType extends Type implements OptionalConvertInterface, TypeInterface
 {
-
     /**
      * Convert string data into the database format.
      *
@@ -49,7 +48,10 @@ class StringType extends Type implements OptionalConvertInterface, TypeInterface
             return (string)$value;
         }
 
-        throw new InvalidArgumentException('Cannot convert value to string');
+        throw new InvalidArgumentException(sprintf(
+            'Cannot convert value of type `%s` to string',
+            getTypeName($value)
+        ));
     }
 
     /**
@@ -81,7 +83,7 @@ class StringType extends Type implements OptionalConvertInterface, TypeInterface
     }
 
     /**
-     * Marshalls request data into PHP strings.
+     * Marshals request data into PHP strings.
      *
      * @param mixed $value The value to convert.
      * @return string|null Converted value.
@@ -101,7 +103,7 @@ class StringType extends Type implements OptionalConvertInterface, TypeInterface
     /**
      * {@inheritDoc}
      *
-     * @return boolean False as database results are returned already as strings
+     * @return bool False as database results are returned already as strings
      */
     public function requiresToPhpCast()
     {

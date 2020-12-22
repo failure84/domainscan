@@ -1,11 +1,14 @@
 <?php
 use Cake\Routing\RouteBuilder;
+use Cake\Routing\Route\DashedRoute;
 use Cake\Routing\Router;
 
-Router::plugin('DebugKit', function (RouteBuilder $routes) {
-    $routes->extensions('json');
+Router::plugin('DebugKit', ['path' => '/debug-kit'], function (RouteBuilder $routes) {
+    $routes->setExtensions('json');
+    $routes->setRouteClass(DashedRoute::class);
+
     $routes->connect(
-        '/toolbar/clear_cache',
+        '/toolbar/clear-cache',
         ['controller' => 'Toolbar', 'action' => 'clearCache']
     );
     $routes->connect(
@@ -22,18 +25,22 @@ Router::plugin('DebugKit', function (RouteBuilder $routes) {
     );
 
     $routes->connect(
-        '/composer/check_dependencies',
+        '/composer/check-dependencies',
         ['controller' => 'Composer', 'action' => 'checkDependencies']
     );
 
     $routes->scope(
-        '/mail_preview',
+        '/mail-preview',
         ['controller' => 'MailPreview'],
-        function ($routes) {
+        function (RouteBuilder $routes) {
             $routes->connect('/', ['action' => 'index']);
             $routes->connect('/preview', ['action' => 'email']);
             $routes->connect('/preview/*', ['action' => 'email']);
             $routes->connect('/sent/:panel/:id', ['action' => 'sent'], ['pass' => ['panel', 'id']]);
         }
     );
+
+    $routes->get('/', ['controller' => 'Dashboard', 'action' => 'index']);
+    $routes->get('/dashboard', ['controller' => 'Dashboard', 'action' => 'index']);
+    $routes->post('/dashboard/reset', ['controller' => 'Dashboard', 'action' => 'reset']);
 });

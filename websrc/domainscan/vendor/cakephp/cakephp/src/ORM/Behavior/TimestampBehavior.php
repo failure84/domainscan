@@ -14,6 +14,7 @@
  */
 namespace Cake\ORM\Behavior;
 
+use Cake\Database\Type;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\Event;
 use Cake\I18n\Time;
@@ -21,9 +22,11 @@ use Cake\ORM\Behavior;
 use DateTime;
 use UnexpectedValueException;
 
+/**
+ * Class TimestampBehavior
+ */
 class TimestampBehavior extends Behavior
 {
-
     /**
      * Default config
      *
@@ -43,21 +46,21 @@ class TimestampBehavior extends Behavior
         'implementedFinders' => [],
         'implementedMethods' => [
             'timestamp' => 'timestamp',
-            'touch' => 'touch'
+            'touch' => 'touch',
         ],
         'events' => [
             'Model.beforeSave' => [
                 'created' => 'new',
-                'modified' => 'always'
-            ]
+                'modified' => 'always',
+            ],
         ],
-        'refreshTimestamp' => true
+        'refreshTimestamp' => true,
     ];
 
     /**
      * Current timestamp
      *
-     * @var \DateTime
+     * @var \Cake\I18n\Time
      */
     protected $_ts;
 
@@ -100,7 +103,8 @@ class TimestampBehavior extends Behavior
                     sprintf('When should be one of "always", "new" or "existing". The passed value "%s" is invalid', $when)
                 );
             }
-            if ($when === 'always' ||
+            if (
+                $when === 'always' ||
                 ($when === 'new' && $new) ||
                 ($when === 'existing' && !$new)
             ) {
@@ -132,7 +136,7 @@ class TimestampBehavior extends Behavior
      *
      * @param \DateTime|null $ts Timestamp
      * @param bool $refreshTimestamp If true timestamp is refreshed.
-     * @return \DateTime
+     * @return \Cake\I18n\Time
      */
     public function timestamp(DateTime $ts = null, $refreshTimestamp = false)
     {
@@ -193,6 +197,26 @@ class TimestampBehavior extends Behavior
         if ($entity->isDirty($field)) {
             return;
         }
-        $entity->set($field, $this->timestamp(null, $refreshTimestamp));
+
+        $ts = $this->timestamp(null, $refreshTimestamp);
+
+        $columnType = $this->getTable()->getSchema()->getColumnType($field);
+        if (!$columnType) {
+            return;
+        }
+
+        /** @var \Cake\Database\Type\DateTimeType $type */
+        $type = Type::build($columnType);
+
+        if (!$type instanceof Type\DateTimeType) {
+            deprecationWarning('TimestampBehavior support for column types other than DateTimeType will be removed in 4.0.');
+            $entity->set($field, (string)$ts);
+
+            return;
+        }
+
+        $class = $type->getDateTimeClassName();
+
+        $entity->set($field, new $class($ts));
     }
 }

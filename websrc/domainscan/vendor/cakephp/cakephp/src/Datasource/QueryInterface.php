@@ -20,10 +20,10 @@ namespace Cake\Datasource;
  *
  * @method $this andWhere($conditions, $types = [])
  * @method $this select($fields = [], $overwrite = false)
+ * @method \Cake\Datasource\RepositoryInterface getRepository()
  */
 interface QueryInterface
 {
-
     const JOIN_TYPE_INNER = 'INNER';
     const JOIN_TYPE_LEFT = 'LEFT';
     const JOIN_TYPE_RIGHT = 'RIGHT';
@@ -239,12 +239,13 @@ interface QueryInterface
      * in the record set you want as results. If empty the limit will default to
      * the existing limit clause, and if that too is empty, then `25` will be used.
      *
-     * Pages should start at 1.
+     * Pages must start at 1.
      *
      * @param int $num The page number you want.
      * @param int|null $limit The number of rows you want in the page. If null
      *  the current limit clause will be used.
      * @return $this
+     * @throws \InvalidArgumentException If page number < 1.
      */
     public function page($num, $limit = null);
 
@@ -345,8 +346,8 @@ interface QueryInterface
      *  $query
      *  ->where(['title !=' => 'Hello World'])
      *  ->where(function ($exp, $query) {
-     *      $or = $exp->or_(['id' => 1]);
-     *      $and = $exp->and_(['id >' => 2, 'id <' => 10]);
+     *      $or = $exp->or(['id' => 1]);
+     *      $and = $exp->and(['id >' => 2, 'id <' => 10]);
      *  return $or->add($and);
      *  });
      * ```

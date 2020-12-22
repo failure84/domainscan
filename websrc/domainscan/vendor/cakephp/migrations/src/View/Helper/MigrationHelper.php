@@ -103,6 +103,10 @@ class MigrationHelper extends Helper
             return 'removeColumn';
         }
 
+        if ($action === 'alter_field') {
+            return 'changeColumn';
+        }
+
         return 'addColumn';
     }
 
@@ -122,7 +126,7 @@ class MigrationHelper extends Helper
             return $this->schemas[$table->name()] = $table;
         }
 
-        $collection = $this->config('collection');
+        $collection = $this->getConfig('collection');
         $schema = $collection->describe($table);
         $this->schemas[$table] = $schema;
 
@@ -170,7 +174,7 @@ class MigrationHelper extends Helper
         $indexes = [];
         if (!empty($tableIndexes)) {
             foreach ($tableIndexes as $name) {
-                $indexes[$name] = $tableSchema->index($name);
+                $indexes[$name] = $tableSchema->getIndex($name);
             }
         }
 
@@ -201,7 +205,7 @@ class MigrationHelper extends Helper
         }
         if (!empty($tableConstraints)) {
             foreach ($tableConstraints as $name) {
-                $constraint = $tableSchema->constraint($name);
+                $constraint = $tableSchema->getConstraint($name);
                 if (isset($constraint['update'])) {
                     $constraint['update'] = $this->formatConstraintAction($constraint['update']);
                     $constraint['delete'] = $this->formatConstraintAction($constraint['delete']);
@@ -247,6 +251,7 @@ class MigrationHelper extends Helper
                 $primaryKeys[] = ['name' => $column, 'info' => $this->column($tableSchema, $column)];
             }
         }
+
         return $primaryKeys;
     }
 
@@ -267,7 +272,7 @@ class MigrationHelper extends Helper
             $tablePrimaryKeys = $tableSchema->primaryKey();
 
             foreach ($tablePrimaryKeys as $primaryKey) {
-                $column = $tableSchema->column($primaryKey);
+                $column = $tableSchema->getColumn($primaryKey);
                 if (isset($column['unsigned']) && $column['unsigned'] === true) {
                     return true;
                 }
@@ -288,6 +293,7 @@ class MigrationHelper extends Helper
         $primaryKeys = $this->primaryKeys($table);
         $primaryKeysColumns = Hash::extract($primaryKeys, '{n}.name');
         sort($primaryKeysColumns);
+
         return $primaryKeysColumns;
     }
 
@@ -301,7 +307,7 @@ class MigrationHelper extends Helper
     public function column($tableSchema, $column)
     {
         return [
-            'columnType' => $tableSchema->columnType($column),
+            'columnType' => $tableSchema->getColumnType($column),
             'options' => $this->attributes($tableSchema, $column),
         ];
     }
@@ -325,7 +331,7 @@ class MigrationHelper extends Helper
             'comment',
             'autoIncrement',
             'precision',
-            'after'
+            'after',
         ]);
         $columnOptions = array_intersect_key($options, $wantedOptions);
         if (empty($columnOptions['comment'])) {
@@ -360,6 +366,7 @@ class MigrationHelper extends Helper
      * Returns a string-like representation of a value
      *
      * @param string $value A value to represent as a string
+     * @param bool $numbersAsString Set tu true to return as string.
      * @return mixed
      */
     public function value($value, $numbersAsString = false)
@@ -403,11 +410,11 @@ class MigrationHelper extends Helper
             'after', 'update',
             'comment', 'unsigned',
             'signed', 'properties',
-            'autoIncrement'
+            'autoIncrement', 'unique',
         ];
 
         $attributes = [];
-        $options = $tableSchema->column($column);
+        $options = $tableSchema->getColumn($column);
         foreach ($options as $_option => $value) {
             $option = $_option;
             switch ($_option) {
@@ -431,6 +438,7 @@ class MigrationHelper extends Helper
         }
 
         ksort($attributes);
+
         return $attributes;
     }
 
@@ -444,7 +452,7 @@ class MigrationHelper extends Helper
     public function stringifyList(array $list, array $options = [])
     {
         $options += [
-            'indent' => 2
+            'indent' => 2,
         ];
 
         if (!$list) {
@@ -455,7 +463,7 @@ class MigrationHelper extends Helper
         foreach ($list as $k => &$v) {
             if (is_array($v)) {
                 $v = $this->stringifyList($v, [
-                    'indent' => $options['indent'] + 1
+                    'indent' => $options['indent'] + 1,
                 ]);
                 $v = sprintf('[%s]', $v);
             } else {
@@ -482,7 +490,7 @@ class MigrationHelper extends Helper
      * Returns a $this->table() statement only if it was not issued already
      *
      * @param string $table Table for which the statement is needed
-     * @param bool $reset
+     * @param bool $reset Reset previously set statement.
      * @return string
      */
     public function tableStatement($table, $reset = false)
@@ -493,6 +501,7 @@ class MigrationHelper extends Helper
 
         if (!isset($this->tableStatements[$table])) {
             $this->tableStatements[$table] = true;
+
             return '$this->table(\'' . $table . '\')';
         }
 

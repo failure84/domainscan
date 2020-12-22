@@ -25,8 +25,6 @@ use PDO;
  */
 class Sqlserver extends Driver
 {
-
-    use PDODriverTrait;
     use SqlserverDialectTrait;
 
     /**
@@ -77,7 +75,7 @@ class Sqlserver extends Driver
 
         $config['flags'] += [
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         ];
 
         if (!empty($config['encoding'])) {
@@ -106,7 +104,7 @@ class Sqlserver extends Driver
         }
         $this->_connect($dsn, $config);
 
-        $connection = $this->connection();
+        $connection = $this->getConnection();
         if (!empty($config['init'])) {
             foreach ((array)$config['init'] as $command) {
                 $connection->exec($command);
@@ -133,7 +131,7 @@ class Sqlserver extends Driver
      */
     public function enabled()
     {
-        return in_array('sqlsrv', PDO::getAvailableDrivers());
+        return in_array('sqlsrv', PDO::getAvailableDrivers(), true);
     }
 
     /**

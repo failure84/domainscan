@@ -2,16 +2,18 @@
 namespace Migrations\Command;
 
 use Migrations\Util\SchemaTrait;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class CacheBuild extends Command
+class CacheBuild extends BaseCommand
 {
     use SchemaTrait;
 
+    /**
+     * {@inheritDoc}
+     */
     protected function configure()
     {
         $this
@@ -28,16 +30,18 @@ class CacheBuild extends Command
                 'name',
                 InputArgument::OPTIONAL,
                 'A specific table you want to clear/refresh cached data for.'
-            )
-        ;
+            );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $name = $input->getArgument('name');
         $schema = $this->_getSchema($input, $output);
         if (!$schema) {
-            return false;
+            return static::CODE_ERROR;
         }
         $tables = [$name];
         if (empty($name)) {
@@ -48,6 +52,7 @@ class CacheBuild extends Command
             $schema->describe($table, ['forceRefresh' => true]);
         }
         $output->writeln('<info>Cache build complete</info>');
-        return true;
+
+        return static::CODE_SUCCESS;
     }
 }

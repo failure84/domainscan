@@ -23,6 +23,9 @@ use Cake\View\Helper;
  * CredentialsHelper
  *
  * Filter sensitive data in screen, data will be displayed on mouse click
+ *
+ * @property \Cake\View\Helper\HtmlHelper $Html
+ * @property \DebugKit\View\Helper\ToolbarHelper $Toolbar
  */
 class CredentialsHelper extends Helper
 {
@@ -57,7 +60,7 @@ class CredentialsHelper extends Helper
         $link = $this->Html->tag('a', '******', [
             'class' => 'filtered-credentials',
             'title' => h($credentials),
-            'onclick' => "this.innerHTML = this.title"
+            'onclick' => "this.innerHTML = this.title",
         ]);
 
         return h($protocol) . $link . '@' . h($tail);

@@ -21,6 +21,9 @@ use Migrations\Util\ColumnParser;
 
 /**
  * Task class for generating migration snapshot files.
+ *
+ * @property \Bake\Shell\Task\BakeTemplateTask $BakeTemplate
+ * @property \Bake\Shell\Task\TestTask $Test
  */
 class MigrationTask extends SimpleMigrationTask
 {
@@ -31,7 +34,7 @@ class MigrationTask extends SimpleMigrationTask
     public function bake($name)
     {
         EventManager::instance()->on('Bake.initialize', function (Event $event) {
-            $event->subject->loadHelper('Migrations.Migration');
+            $event->getSubject()->loadHelper('Migrations.Migration');
         });
 
         return parent::bake($name);
@@ -67,22 +70,23 @@ class MigrationTask extends SimpleMigrationTask
                 'namespace' => $namespace,
                 'tables' => [],
                 'action' => null,
-                'name' => $className
+                'name' => $className,
             ];
         }
 
         $arguments = $this->args;
         unset($arguments[0]);
-        $columnParser = new ColumnParser;
+        $columnParser = new ColumnParser();
         $fields = $columnParser->parseFields($arguments);
         $indexes = $columnParser->parseIndexes($arguments);
         $primaryKey = $columnParser->parsePrimaryKey($arguments);
 
         if (in_array($action[0], ['alter_table', 'add_field']) && !empty($primaryKey)) {
-            $this->error('Adding a primary key to an already existing table is not supported.');
+            $this->abort('Adding a primary key to an already existing table is not supported.');
         }
 
         list($action, $table) = $action;
+
         return [
             'plugin' => $this->plugin,
             'pluginPath' => $pluginPath,
@@ -92,9 +96,9 @@ class MigrationTask extends SimpleMigrationTask
             'columns' => [
                 'fields' => $fields,
                 'indexes' => $indexes,
-                'primaryKey' => $primaryKey
+                'primaryKey' => $primaryKey,
             ],
-            'name' => $className
+            'name' => $className,
         ];
     }
 
@@ -114,6 +118,9 @@ class MigrationTask extends SimpleMigrationTask
             $table = Inflector::underscore($matches[2]);
         } elseif (preg_match('/^(Remove).+?(?:From)(.*)/', $name, $matches)) {
             $action = 'drop_field';
+            $table = Inflector::underscore($matches[2]);
+        } elseif (preg_match('/^(Alter).+?(?:On)(.*)/', $name, $matches)) {
+            $action = 'alter_field';
             $table = Inflector::underscore($matches[2]);
         } elseif (preg_match('/^(Alter)(.*)/', $name, $matches)) {
             $action = 'alter_table';

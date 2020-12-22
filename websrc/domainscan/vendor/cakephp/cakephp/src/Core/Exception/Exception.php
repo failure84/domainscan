@@ -19,7 +19,6 @@ use RuntimeException;
  */
 class Exception extends RuntimeException
 {
-
     /**
      * Array of attributes that are passed in from the constructor, and
      * made available in the view when a development error is displayed.
@@ -53,7 +52,7 @@ class Exception extends RuntimeException
      * Constructor.
      *
      * Allows you to create exceptions that are treated as framework errors and disabled
-     * when debug = 0.
+     * when debug mode is off.
      *
      * @param string|array $message Either the string of the error message, or an array of attributes
      *   that are made available in the view, and sprintf()'d into Exception::$_messageTemplate
@@ -86,11 +85,11 @@ class Exception extends RuntimeException
     /**
      * Get/set the response header to be used
      *
-     * See also Cake\Http\Response::header()
+     * See also Cake\Http\Response::withHeader()
      *
      * @param string|array|null $header An array of header strings or a single header string
      *  - an associative array of "header name" => "header value"
-     *  - an array of string headers is also accepted
+     *  - an array of string headers is also accepted (deprecated)
      * @param string|null $value The header value.
      * @return array
      */
@@ -100,6 +99,13 @@ class Exception extends RuntimeException
             return $this->_responseHeaders;
         }
         if (is_array($header)) {
+            if (isset($header[0])) {
+                deprecationWarning(
+                    'Passing a list string headers to Exception::responseHeader() is deprecated. ' .
+                    'Use an associative array instead.'
+                );
+            }
+
             return $this->_responseHeaders = $header;
         }
         $this->_responseHeaders = [$header => $value];

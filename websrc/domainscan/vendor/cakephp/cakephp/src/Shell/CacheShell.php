@@ -15,7 +15,7 @@
 namespace Cake\Shell;
 
 use Cake\Cache\Cache;
-use Cake\Cache\Engine\ApcEngine;
+use Cake\Cache\Engine\ApcuEngine;
 use Cake\Cache\Engine\WincacheEngine;
 use Cake\Console\Shell;
 use InvalidArgumentException;
@@ -29,7 +29,6 @@ use InvalidArgumentException;
  */
 class CacheShell extends Shell
 {
-
     /**
      * Get the option parser for this shell.
      *
@@ -50,15 +49,15 @@ class CacheShell extends Shell
                 'description' => [
                     'Clear the cache for a particular prefix.',
                     'For example, `cake cache clear _cake_model_` will clear the model cache',
-                    'Use `cake cache list_prefixes` to list available prefixes'
+                    'Use `cake cache list_prefixes` to list available prefixes',
                 ],
                 'arguments' => [
                     'prefix' => [
                         'help' => 'The cache prefix to be cleared.',
-                        'required' => true
-                    ]
-                ]
-            ]
+                        'required' => true,
+                    ],
+                ],
+            ],
         ]);
 
         return $parser;
@@ -76,8 +75,8 @@ class CacheShell extends Shell
         try {
             $engine = Cache::engine($prefix);
             Cache::clear(false, $prefix);
-            if ($engine instanceof ApcEngine) {
-                $this->warn("ApcEngine detected: Cleared $prefix CLI cache successfully " .
+            if ($engine instanceof ApcuEngine) {
+                $this->warn("ApcuEngine detected: Cleared $prefix CLI cache successfully " .
                 "but $prefix web cache must be cleared separately.");
             } elseif ($engine instanceof WincacheEngine) {
                 $this->warn("WincacheEngine detected: Cleared $prefix CLI cache successfully " .

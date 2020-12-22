@@ -14,6 +14,7 @@
  */
 namespace Cake\Network;
 
+use Cake\Core\Exception\Exception as CakeException;
 use Cake\Core\InstanceConfigTrait;
 use Cake\Network\Exception\SocketException;
 use Cake\Validation\Validation;
@@ -24,12 +25,9 @@ use InvalidArgumentException;
  * CakePHP network socket connection class.
  *
  * Core base class for network communication.
- *
- * @mixin \Cake\Core\InstanceConfigTrait
  */
 class Socket
 {
-
     use InstanceConfigTrait;
 
     /**
@@ -49,7 +47,7 @@ class Socket
         'host' => 'localhost',
         'protocol' => 'tcp',
         'port' => 80,
-        'timeout' => 30
+        'timeout' => 30,
     ];
 
     /**
@@ -164,8 +162,13 @@ class Socket
         }
 
         set_error_handler([$this, '_connectionErrorHandler']);
+        $remoteSocketTarget = $scheme . $this->_config['host'];
+        $port = (int)$this->_config['port'];
+        if ($port > 0) {
+            $remoteSocketTarget .= ':' . $port;
+        }
         $this->connection = stream_socket_client(
-            $scheme . $this->_config['host'] . ':' . $this->_config['port'],
+            $remoteSocketTarget,
             $errNum,
             $errStr,
             $this->_config['timeout'],
@@ -245,7 +248,7 @@ class Socket
     /**
      * Get the connection context.
      *
-     * @return null|array Null when there is no connection, an array when there is.
+     * @return array|null Null when there is no connection, an array when there is.
      */
     public function context()
     {
@@ -470,10 +473,13 @@ class Socket
         }
 
         try {
+            if ($this->connection === null) {
+                throw new CakeException('You must call connect() first.');
+            }
             $enableCryptoResult = stream_socket_enable_crypto($this->connection, $enable, $method);
         } catch (Exception $e) {
             $this->setLastError(null, $e->getMessage());
-            throw new SocketException($e->getMessage());
+            throw new SocketException($e->getMessage(), null, $e);
         }
         if ($enableCryptoResult === true) {
             $this->encrypted = $enable;

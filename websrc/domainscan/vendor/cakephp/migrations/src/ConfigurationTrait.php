@@ -11,13 +11,11 @@
  */
 namespace Migrations;
 
-use Cake\Core\Plugin;
+use Cake\Core\Plugin as CorePlugin;
 use Cake\Datasource\ConnectionManager;
 use Migrations\Util\UtilTrait;
 use Phinx\Config\Config;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Contains a set of methods designed as overrides for
@@ -27,7 +25,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 trait ConfigurationTrait
 {
-
     use UtilTrait;
 
     /**
@@ -55,7 +52,7 @@ trait ConfigurationTrait
      * Overrides the original method from phinx in order to return a tailored
      * Config object containing the connection details for the database.
      *
-     * @param bool $forceRefresh
+     * @param bool $forceRefresh Refresh config.
      * @return \Phinx\Config\Config
      */
     public function getConfig($forceRefresh = false)
@@ -80,17 +77,17 @@ trait ConfigurationTrait
 
         $connection = $this->getConnectionName($this->input);
 
-        $connectionConfig = ConnectionManager::config($connection);
+        $connectionConfig = ConnectionManager::getConfig($connection);
         $adapterName = $this->getAdapterName($connectionConfig['driver']);
 
-        $templatePath = Plugin::path('Migrations') . 'src' . DS . 'Template' . DS;
+        $templatePath = __DIR__ . DS . 'Template' . DS;
         $config = [
             'paths' => [
                 'migrations' => $migrationsPath,
                 'seeds' => $seedsPath,
             ],
             'templates' => [
-                'file' => $templatePath . 'Phinx' . DS . 'create.php.template'
+                'file' => $templatePath . 'Phinx' . DS . 'create.php.template',
             ],
             'migration_base_class' => 'Migrations\AbstractMigration',
             'environments' => [
@@ -105,8 +102,9 @@ trait ConfigurationTrait
                     'name' => $connectionConfig['database'],
                     'charset' => isset($connectionConfig['encoding']) ? $connectionConfig['encoding'] : null,
                     'unix_socket' => isset($connectionConfig['unix_socket']) ? $connectionConfig['unix_socket'] : null,
-                ]
-            ]
+                    'suffix' => '',
+                ],
+            ],
         ];
 
         if ($adapterName === 'pgsql') {
@@ -170,6 +168,7 @@ trait ConfigurationTrait
         if ($input->getOption('connection')) {
             $connection = $input->getOption('connection');
         }
+
         return $connection;
     }
 }

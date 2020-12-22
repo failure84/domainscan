@@ -53,22 +53,22 @@ class CakeManager extends Manager
     /**
      * Prints the specified environment's migration status.
      *
-     * @param string $environment
-     * @param null|string $format
-     * @return array Array of migrations
+     * @param string $environment Environment name.
+     * @param null|string $format Format (`json` or `array`).
+     * @return array|string Array of migrations or json string.
      */
     public function printStatus($environment, $format = null)
     {
         $migrations = [];
         $isJson = $format === 'json';
-        if (count($this->getMigrations())) {
+        if (count($this->getMigrations('default'))) {
             $env = $this->getEnvironment($environment);
             $versions = $env->getVersionLog();
             $this->maxNameLength = $versions ? max(array_map(function ($version) {
                 return strlen($version['migration_name']);
             }, $versions)) : 0;
 
-            foreach ($this->getMigrations() as $migration) {
+            foreach ($this->getMigrations('default') as $migration) {
                 if (array_key_exists($migration->getVersion(), $versions)) {
                     $status = 'up';
                     unset($versions[$migration->getVersion()]);
@@ -80,7 +80,7 @@ class CakeManager extends Manager
                 $migrationParams = [
                     'status' => $status,
                     'id' => $migration->getVersion(),
-                    'name' => $migration->getName()
+                    'name' => $migration->getName(),
                 ];
 
                 $migrations[$version] = $migrationParams;
@@ -91,12 +91,12 @@ class CakeManager extends Manager
                 $migrationParams = [
                     'status' => 'up',
                     'id' => $version,
-                    'name' => $missing['migration_name']
+                    'name' => $missing['migration_name'],
                 ];
 
                 if (!$isJson) {
                     $migrationParams = array_merge($migrationParams, [
-                        'missing' => true
+                        'missing' => true,
                     ]);
                 }
 
@@ -117,9 +117,9 @@ class CakeManager extends Manager
     /**
      * {@inheritdoc}
      */
-    public function migrateToDateTime($environment, \DateTime $dateTime)
+    public function migrateToDateTime($environment, \DateTime $dateTime, $fake = false)
     {
-        $versions = array_keys($this->getMigrations());
+        $versions = array_keys($this->getMigrations('default'));
         $dateString = $dateTime->format('Ymdhis');
         $versionToMigrate = null;
         foreach ($versions as $version) {
@@ -132,13 +132,14 @@ class CakeManager extends Manager
             $this->getOutput()->writeln(
                 'No migrations to run'
             );
+
             return;
         }
 
         $this->getOutput()->writeln(
             'Migrating to version ' . $versionToMigrate
         );
-        $this->migrate($environment, $versionToMigrate);
+        $this->migrate($environment, $versionToMigrate, $fake);
     }
 
     /**
@@ -154,12 +155,14 @@ class CakeManager extends Manager
 
         if (empty($versions) || $dateString > $versions[0]) {
             $this->getOutput()->writeln('No migrations to rollback');
+
             return;
         }
 
         if ($dateString < end($versions)) {
             $this->getOutput()->writeln('Rolling back all migrations');
             $this->rollback($environment, 0);
+
             return;
         }
 
@@ -212,11 +215,12 @@ class CakeManager extends Manager
         $migrationFile = $migrationFile[0];
         $className = $this->getMigrationClassName($migrationFile);
         require_once $migrationFile;
-        $Migration = new $className($version);
+        $Migration = new $className('default', $version);
 
         $time = date('Y-m-d H:i:s', time());
 
         $adapter->migrated($Migration, 'up', $time, $time);
+
         return true;
     }
 
@@ -231,7 +235,7 @@ class CakeManager extends Manager
      */
     public function getVersionsToMark($input)
     {
-        $migrations = $this->getMigrations();
+        $migrations = $this->getMigrations('default');
         $versions = array_keys($migrations);
 
         $versionArg = $input->getArgument('version');
@@ -278,6 +282,7 @@ class CakeManager extends Manager
 
         if (empty($versions)) {
             $output->writeln('<info>No migrations were found. Nothing to mark as migrated.</info>');
+
             return;
         }
 
@@ -303,6 +308,7 @@ class CakeManager extends Manager
                     )
                 );
                 $output->writeln('<error>All marked migrations during this process were unmarked.</error>');
+
                 return;
             }
         }

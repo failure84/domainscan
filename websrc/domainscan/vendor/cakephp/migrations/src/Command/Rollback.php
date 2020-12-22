@@ -20,11 +20,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Rollback extends RollbackCommand
 {
-
-    use CommandTrait;
-    use ConfigurationTrait {
+    use CommandTrait {
         execute as parentExecute;
     }
+    use ConfigurationTrait;
     use EventDispatcherTrait;
 
     /**
@@ -41,6 +40,8 @@ class Rollback extends RollbackCommand
             ->addOption('--connection', '-c', InputOption::VALUE_REQUIRED, 'The datasource connection to use')
             ->addOption('--source', '-s', InputOption::VALUE_REQUIRED, 'The folder where migrations are in')
             ->addOption('--force', '-f', InputOption::VALUE_NONE, 'Force rollback to ignore breakpoints')
+            ->addOption('--dry-run', '-x', InputOption::VALUE_NONE, 'Dump queries to standard output instead of executing it')
+            ->addOption('--fake', null, InputOption::VALUE_NONE, "Mark any rollbacks selected as run, but don't actually execute them")
             ->addOption(
                 '--no-lock',
                 null,
@@ -55,15 +56,17 @@ class Rollback extends RollbackCommand
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input the input object
      * @param \Symfony\Component\Console\Output\OutputInterface $output the output object
-     * @return mixed
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $event = $this->dispatchEvent('Migration.beforeRollback');
         if ($event->isStopped()) {
-            return $event->result;
+            return $event->result ? BaseCommand::CODE_SUCCESS : BaseCommand::CODE_ERROR;
         }
-        $this->parentExecute($input, $output);
+        $result = $this->parentExecute($input, $output);
         $this->dispatchEvent('Migration.afterRollback');
+
+        return $result !== null ? $result : BaseCommand::CODE_SUCCESS;
     }
 }

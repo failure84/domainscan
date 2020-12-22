@@ -23,7 +23,6 @@ use PDO;
  */
 class MysqlStatement extends PDOStatement
 {
-
     use BufferResultsTrait;
 
     /**
@@ -32,7 +31,7 @@ class MysqlStatement extends PDOStatement
      */
     public function execute($params = null)
     {
-        $connection = $this->_driver->connection();
+        $connection = $this->_driver->getConnection();
 
         try {
             $connection->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $this->_bufferResults);

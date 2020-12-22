@@ -24,7 +24,6 @@ use RuntimeException;
  */
 abstract class SerializedView extends View
 {
-
     /**
      * Response type.
      *
@@ -46,23 +45,24 @@ abstract class SerializedView extends View
         EventManager $eventManager = null,
         array $viewOptions = []
     ) {
-        parent::__construct($request, $response, $eventManager, $viewOptions);
-
         if ($response && $response instanceof Response) {
-            $response->type($this->_responseType);
+            $response = $response->withType($this->_responseType);
         }
+        parent::__construct($request, $response, $eventManager, $viewOptions);
     }
 
     /**
      * Load helpers only if serialization is disabled.
      *
-     * @return void
+     * @return $this
      */
     public function loadHelpers()
     {
         if (empty($this->viewVars['_serialize'])) {
             parent::loadHelpers();
         }
+
+        return $this;
     }
 
     /**
@@ -83,7 +83,7 @@ abstract class SerializedView extends View
      *   names. If true all view variables will be serialized. If unset normal
      *   view template will be rendered.
      *
-     * @param string|bool|null $view The view being rendered.
+     * @param string|false|null $view The view being rendered.
      * @param string|null $layout The layout being rendered.
      * @return string|null The rendered view.
      */

@@ -18,11 +18,15 @@ use Cake\Database\ExpressionInterface;
 use Cake\Database\ValueBinder;
 
 /**
- * Represents a single identifier name in the database
+ * Represents a single identifier name in the database.
+ *
+ * Identifier values are unsafe with user supplied data.
+ * Values will be quoted when identifier quoting is enabled.
+ *
+ * @see \Cake\Database\Query::identifier()
  */
 class IdentifierExpression implements ExpressionInterface
 {
-
     /**
      * Holds the identifier string
      *

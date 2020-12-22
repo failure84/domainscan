@@ -3,16 +3,18 @@ namespace Migrations\Command;
 
 use Cake\Cache\Cache;
 use Migrations\Util\SchemaTrait;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class CacheClear extends Command
+class CacheClear extends BaseCommand
 {
     use SchemaTrait;
 
+    /**
+     * {@inheritDoc}
+     */
     protected function configure()
     {
         $this
@@ -29,22 +31,24 @@ class CacheClear extends Command
                 'name',
                 InputArgument::OPTIONAL,
                 'A specific table you want to clear/refresh cached data for.'
-            )
-        ;
+            );
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $schema = $this->_getSchema($input, $output);
         $name = $input->getArgument('name');
         if (!$schema) {
-            return false;
+            return static::CODE_ERROR;
         }
         $tables = [$name];
         if (empty($name)) {
             $tables = $schema->listTables();
         }
-        $configName = $schema->cacheMetadata();
+        $configName = $schema->getCacheMetadata();
 
         foreach ($tables as $table) {
             $output->writeln(sprintf(
@@ -56,6 +60,7 @@ class CacheClear extends Command
             Cache::delete($key, $configName);
         }
         $output->writeln('<info>Cache clear complete<info>');
-        return true;
+
+        return static::CODE_SUCCESS;
     }
 }

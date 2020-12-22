@@ -62,12 +62,9 @@ use InvalidArgumentException;
  *
  * When using the `for` or `when` matchers, conditions will be re-checked on the before and after
  * callback as the conditions could change during the dispatch cycle.
- *
- * @mixin \Cake\Core\InstanceConfigTrait
  */
 class DispatcherFilter implements EventListenerInterface
 {
-
     use InstanceConfigTrait;
 
     /**
@@ -123,11 +120,11 @@ class DispatcherFilter implements EventListenerInterface
         return [
             'Dispatcher.beforeDispatch' => [
                 'callable' => 'handle',
-                'priority' => $this->_config['priority']
+                'priority' => $this->_config['priority'],
             ],
             'Dispatcher.afterDispatch' => [
                 'callable' => 'handle',
-                'priority' => $this->_config['priority']
+                'priority' => $this->_config['priority'],
             ],
         ];
     }
@@ -158,13 +155,13 @@ class DispatcherFilter implements EventListenerInterface
      */
     public function matches(Event $event)
     {
-        /* @var \Cake\Http\ServerRequest $request */
+        /** @var \Cake\Http\ServerRequest $request */
         $request = $event->getData('request');
         $pass = true;
         if (!empty($this->_config['for'])) {
             $len = strlen('preg:');
             $for = $this->_config['for'];
-            $url = $request->here(false);
+            $url = $request->getRequestTarget();
             if (substr($for, 0, $len) === 'preg:') {
                 $pass = (bool)preg_match(substr($for, $len), $url);
             } else {

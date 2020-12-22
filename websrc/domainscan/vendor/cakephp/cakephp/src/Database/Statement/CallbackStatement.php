@@ -22,7 +22,6 @@ namespace Cake\Database\Statement;
  */
 class CallbackStatement extends StatementDecorator
 {
-
     /**
      * A callback function to be applied to results.
      *
@@ -51,7 +50,7 @@ class CallbackStatement extends StatementDecorator
      * @param string $type Either 'num' or 'assoc' to indicate the result format you would like.
      * @return array|false
      */
-    public function fetch($type = 'num')
+    public function fetch($type = parent::FETCH_TYPE_NUM)
     {
         $callback = $this->_callback;
         $row = $this->_statement->fetch($type);
@@ -67,7 +66,7 @@ class CallbackStatement extends StatementDecorator
      * @param string $type Either 'num' or 'assoc' to indicate the result format you would like.
      * @return array
      */
-    public function fetchAll($type = 'num')
+    public function fetchAll($type = parent::FETCH_TYPE_NUM)
     {
         return array_map($this->_callback, $this->_statement->fetchAll($type));
     }

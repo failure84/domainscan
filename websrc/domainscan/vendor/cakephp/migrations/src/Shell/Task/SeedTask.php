@@ -16,14 +16,15 @@ namespace Migrations\Shell\Task;
 use Bake\Shell\Task\SimpleBakeTask;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Core\Configure;
-use Cake\Core\Plugin;
+use Cake\Core\Plugin as CorePlugin;
 use Cake\Datasource\ConnectionManager;
 use Cake\Utility\Inflector;
 
 /**
  * Task class for generating seed files.
  *
- * @property \Bake\Shell\Task\BakeTemplateTask
+ * @property \Bake\Shell\Task\BakeTemplateTask $BakeTemplate
+ * @property \Bake\Shell\Task\TestTask $Test
  */
 class SeedTask extends SimpleBakeTask
 {
@@ -59,6 +60,7 @@ class SeedTask extends SimpleBakeTask
         if (isset($this->plugin)) {
             $path = $this->_pluginPath($this->plugin) . $this->pathFragment;
         }
+
         return str_replace('/', DS, $path);
     }
 
@@ -124,6 +126,7 @@ class SeedTask extends SimpleBakeTask
     public function bake($name)
     {
         $this->params['no-test'] = true;
+
         return parent::bake($name);
     }
 
@@ -138,43 +141,43 @@ class SeedTask extends SimpleBakeTask
         $parser = new ConsoleOptionParser($name);
 
         $bakeThemes = [];
-        foreach (Plugin::loaded() as $plugin) {
-            $path = Plugin::classPath($plugin);
+        foreach (CorePlugin::loaded() as $plugin) {
+            $path = CorePlugin::classPath($plugin);
             if (is_dir($path . 'Template' . DS . 'Bake')) {
                 $bakeThemes[] = $plugin;
             }
         }
 
-        $parser->description(
+        $parser->setDescription(
             'Bake seed class.'
         )->addOption('plugin', [
             'short' => 'p',
-            'help' => 'Plugin to bake into.'
+            'help' => 'Plugin to bake into.',
         ])->addOption('force', [
             'short' => 'f',
             'boolean' => true,
-            'help' => 'Force overwriting existing files without prompting.'
+            'help' => 'Force overwriting existing files without prompting.',
         ])->addOption('connection', [
             'short' => 'c',
             'default' => 'default',
-            'help' => 'The datasource connection to get data from.'
+            'help' => 'The datasource connection to get data from.',
         ])->addOption('table', [
-            'help' => 'The database table to use.'
+            'help' => 'The database table to use.',
         ])->addOption('theme', [
             'short' => 't',
             'help' => 'The theme to use when baking code.',
-            'choices' => $bakeThemes
+            'choices' => $bakeThemes,
         ])->addArgument('name', [
-            'help' => 'Name of the seed to bake. Can use Plugin.name to bake plugin models.'
+            'help' => 'Name of the seed to bake. Can use Plugin.name to bake plugin models.',
         ])->addOption('data', [
             'boolean' => true,
-            'help' => 'Include data from the table to the seed'
+            'help' => 'Include data from the table to the seed',
         ])->addOption('fields', [
             'default' => '*',
             'help' => 'If including data, comma separated list of fields to select (all fields by default)',
         ])->addOption('limit', [
             'short' => 'l',
-            'help' => 'If including data, max number of rows to select'
+            'help' => 'If including data, max number of rows to select',
         ]);
 
         return $parser;

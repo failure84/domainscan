@@ -17,9 +17,11 @@ namespace Cake\Database;
 /*
  * Represents a class that holds a TypeMap object
  */
+/**
+ * Trait TypeMapTrait
+ */
 trait TypeMapTrait
 {
-
     /**
      * @var \Cake\Database\TypeMap
      */
@@ -62,6 +64,10 @@ trait TypeMapTrait
      */
     public function typeMap($typeMap = null)
     {
+        deprecationWarning(
+            'TypeMapTrait::typeMap() is deprecated. ' .
+            'Use TypeMapTrait::setTypeMap()/getTypeMap() instead.'
+        );
         if ($typeMap !== null) {
             return $this->setTypeMap($typeMap);
         }
@@ -70,10 +76,18 @@ trait TypeMapTrait
     }
 
     /**
-     * Allows setting default types when chaining query.
+     * Overwrite the default type mappings for fields
+     * in the implementing object.
+     *
+     * This method is useful if you need to set type mappings that are shared across
+     * multiple functions/expressions in a query.
+     *
+     * To add a default without overwriting existing ones
+     * use `getTypeMap()->addDefaults()`
      *
      * @param array $types The array of types to set.
      * @return $this
+     * @see \Cake\Database\TypeMap::setDefaults()
      */
     public function setDefaultTypes(array $types)
     {
@@ -101,6 +115,10 @@ trait TypeMapTrait
      */
     public function defaultTypes(array $types = null)
     {
+        deprecationWarning(
+            'TypeMapTrait::defaultTypes() is deprecated. ' .
+            'Use TypeMapTrait::setDefaultTypes()/getDefaultTypes() instead.'
+        );
         if ($types !== null) {
             return $this->setDefaultTypes($types);
         }

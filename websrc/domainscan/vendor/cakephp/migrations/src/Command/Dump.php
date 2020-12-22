@@ -26,7 +26,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class Dump extends AbstractCommand
 {
-
     use CommandTrait;
     use ConfigurationTrait;
     use TableFinderTrait;
@@ -56,7 +55,7 @@ class Dump extends AbstractCommand
     }
 
     /**
-     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param \Symfony\Component\Console\Output\OutputInterface $output The output object.
      * @return mixed
      */
     public function output(OutputInterface $output = null)
@@ -64,6 +63,7 @@ class Dump extends AbstractCommand
         if ($output !== null) {
             $this->output = $output;
         }
+
         return $this->output;
     }
 
@@ -72,7 +72,7 @@ class Dump extends AbstractCommand
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input the input object
      * @param \Symfony\Component\Console\Output\OutputInterface $output the output object
-     * @return bool Success of the call.
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -83,11 +83,11 @@ class Dump extends AbstractCommand
         $path = $this->getOperationsPath($input);
         $connectionName = $input->getOption('connection') ?: 'default';
         $connection = ConnectionManager::get($connectionName);
-        $collection = $connection->schemaCollection();
+        $collection = $connection->getSchemaCollection();
 
         $options = [
             'require-table' => false,
-            'plugin' => $this->getPlugin($input)
+            'plugin' => $this->getPlugin($input),
         ];
         $tables = $this->getTablesToBake($collection, $options);
 
@@ -103,13 +103,15 @@ class Dump extends AbstractCommand
         $output->writeln(sprintf('<info>Writing dump file `%s`...</info>', $filePath));
         if (file_put_contents($filePath, serialize($dump))) {
             $output->writeln(sprintf('<info>Dump file `%s` was successfully written</info>', $filePath));
-            return true;
+
+            return BaseCommand::CODE_SUCCESS;
         }
 
         $output->writeln(sprintf(
             '<error>An error occurred while writing dump file `%s`</error>',
             $filePath
         ));
-        return false;
+
+        return BaseCommand::CODE_ERROR;
     }
 }

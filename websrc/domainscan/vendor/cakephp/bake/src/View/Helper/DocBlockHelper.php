@@ -2,8 +2,10 @@
 namespace Bake\View\Helper;
 
 use Cake\Collection\Collection;
+use Cake\Core\App;
 use Cake\Database\Type;
 use Cake\ORM\Association;
+use Cake\Utility\Inflector;
 use Cake\View\Helper;
 
 /**
@@ -11,6 +13,9 @@ use Cake\View\Helper;
  */
 class DocBlockHelper extends Helper
 {
+    /**
+     * @var bool Whether to add a blank line between different class annotations
+     */
     protected $_annotationSpacing = true;
 
     /**
@@ -27,14 +32,18 @@ class DocBlockHelper extends Helper
         $lines = [];
         if ($className && $classType) {
             $lines[] = "{$className} {$classType}";
-            $lines[] = "";
+        }
+
+        if ($annotations && $lines) {
+            $lines[] = '';
         }
 
         $previous = false;
-        foreach ($annotations as $ann) {
-            if (strlen($ann) > 1 && $ann[0] === '@' && strpos($ann, ' ') > 0) {
-                $type = substr($ann, 0, strpos($ann, ' '));
-                if ($this->_annotationSpacing &&
+        foreach ($annotations as $annotation) {
+            if (strlen($annotation) > 1 && $annotation[0] === '@' && strpos($annotation, ' ') > 0) {
+                $type = substr($annotation, 0, strpos($annotation, ' '));
+                if (
+                    $this->_annotationSpacing &&
                     $previous !== false &&
                     $previous !== $type
                 ) {
@@ -42,7 +51,7 @@ class DocBlockHelper extends Helper
                 }
                 $previous = $type;
             }
-            $lines[] = $ann;
+            $lines[] = $annotation;
         }
 
         $lines = array_merge(["/**"], (new Collection($lines))->map(function ($line) {
@@ -61,8 +70,10 @@ class DocBlockHelper extends Helper
      */
     public function associatedEntityTypeToHintType($type, Association $association)
     {
-        if ($association->type() === Association::MANY_TO_MANY ||
-            $association->type() === Association::ONE_TO_MANY
+        $annotationType = $association->type();
+        if (
+            $annotationType === Association::MANY_TO_MANY ||
+            $annotationType === Association::ONE_TO_MANY
         ) {
             return $type . '[]';
         }
@@ -96,7 +107,12 @@ class DocBlockHelper extends Helper
         $properties = [];
         foreach ($propertySchema as $property => $info) {
             if ($info['kind'] === 'column') {
-                $properties[$property] = $this->columnTypeToHintType($info['type']);
+                $type = $this->columnTypeToHintType($info['type']);
+                if (!empty($info['null'])) {
+                    $type .= '|null';
+                }
+
+                $properties[$property] = $type;
             }
         }
 
@@ -133,7 +149,7 @@ class DocBlockHelper extends Helper
                 if ($info['association']->type() === Association::MANY_TO_ONE) {
                     $properties = $this->_insertAfter(
                         $properties,
-                        $info['association']->foreignKey(),
+                        $info['association']->getForeignKey(),
                         [$property => $type]
                     );
                 } else {
@@ -177,6 +193,10 @@ class DocBlockHelper extends Helper
             case 'boolean':
                 return 'bool';
 
+            case 'array':
+            case 'json':
+                return 'array';
+
             case 'binary':
                 return 'string|resource';
 
@@ -211,6 +231,46 @@ class DocBlockHelper extends Helper
         }
 
         return $lines;
+    }
+
+    /**
+     * Build property, method, mixing annotations for table class.
+     *
+     * @param array $associations Associations list.
+     * @param array $associationInfo Association info.
+     * @param array $behaviors Behaviors list.
+     * @param string $entity Entity name.
+     * @param string $namespace Namespace.
+     * @return array
+     */
+    public function buildTableAnnotations($associations, $associationInfo, $behaviors, $entity, $namespace)
+    {
+        $annotations = [];
+        foreach ($associations as $type => $assocs) {
+            foreach ($assocs as $assoc) {
+                $typeStr = Inflector::camelize($type);
+                $tableFqn = $associationInfo[$assoc['alias']]['targetFqn'];
+                $annotations[] = "@property {$tableFqn}&\Cake\ORM\Association\\{$typeStr} \${$assoc['alias']}";
+            }
+        }
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity} get(\$primaryKey, \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity} newEntity(\$data = null, array \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity}[] newEntities(array \$data, array \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity}|false save(\\Cake\\Datasource\\EntityInterface \$entity, \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity} saveOrFail(\\Cake\\Datasource\\EntityInterface \$entity, \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity} patchEntity(\\Cake\\Datasource\\EntityInterface \$entity, array \$data, array \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity}[] patchEntities(\$entities, array \$data, array \$options = [])";
+        $annotations[] = "@method \\{$namespace}\\Model\\Entity\\{$entity} findOrCreate(\$search, callable \$callback = null, \$options = [])";
+        foreach ($behaviors as $behavior => $behaviorData) {
+            $className = App::className($behavior, 'Model/Behavior', 'Behavior');
+            if ($className === false) {
+                $className = "Cake\ORM\Behavior\\{$behavior}Behavior";
+            }
+
+            $annotations[] = '@mixin \\' . $className;
+        }
+
+        return $annotations;
     }
 
     /**

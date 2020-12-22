@@ -14,7 +14,7 @@ namespace DebugKit\Panel;
 
 use ArrayObject;
 use Cake\Core\App;
-use Cake\Mailer\Email;
+use Cake\Mailer\TransportFactory;
 use DebugKit\DebugPanel;
 use DebugKit\Mailer\Transport\DebugKitTransport;
 use ReflectionClass;
@@ -39,12 +39,12 @@ class MailPanel extends DebugPanel
      */
     public function initialize()
     {
-        $reflection = new ReflectionClass(Email::class);
-        $property = $reflection->getProperty('_transportConfig');
+        $reflection = new ReflectionClass(TransportFactory::class);
+        $property = $reflection->getProperty('_config');
         $property->setAccessible(true);
         $configs = $property->getValue();
 
-        $log = $this->emailLog = new ArrayObject;
+        $log = $this->emailLog = new ArrayObject();
 
         foreach ($configs as $name => &$transport) {
             if (is_object($transport)) {
@@ -73,7 +73,7 @@ class MailPanel extends DebugPanel
     public function data()
     {
         return [
-            'emails' => isset($this->emailLog) ? $this->emailLog->getArrayCopy() : []
+            'emails' => isset($this->emailLog) ? $this->emailLog->getArrayCopy() : [],
         ];
     }
 
@@ -84,7 +84,7 @@ class MailPanel extends DebugPanel
      */
     public function summary()
     {
-        if (count($this->emailLog) === 0) {
+        if (empty($this->emailLog)) {
             return '';
         }
 

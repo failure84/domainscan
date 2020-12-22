@@ -27,7 +27,6 @@ use RuntimeException;
  */
 class SaveOptionsBuilder extends ArrayObject
 {
-
     use AssociationsNormalizerTrait;
 
     /**
@@ -107,7 +106,7 @@ class SaveOptionsBuilder extends ArrayObject
             }
             $this->_checkAssociation($table, $key);
             if (isset($associated['associated'])) {
-                $this->_associated($table->association($key)->getTarget(), $associated['associated']);
+                $this->_associated($table->getAssociation($key)->getTarget(), $associated['associated']);
                 continue;
             }
         }

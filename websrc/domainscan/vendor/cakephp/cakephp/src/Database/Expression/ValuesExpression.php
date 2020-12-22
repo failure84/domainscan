@@ -29,7 +29,6 @@ use Cake\Database\ValueBinder;
  */
 class ValuesExpression implements ExpressionInterface
 {
-
     use ExpressionTypeCasterTrait;
     use TypeMapTrait;
 
@@ -84,7 +83,8 @@ class ValuesExpression implements ExpressionInterface
      */
     public function add($data)
     {
-        if ((count($this->_values) && $data instanceof Query) ||
+        if (
+            (count($this->_values) && $data instanceof Query) ||
             ($this->_query && is_array($data))
         ) {
             throw new Exception(
@@ -134,6 +134,10 @@ class ValuesExpression implements ExpressionInterface
      */
     public function columns($cols = null)
     {
+        deprecationWarning(
+            'ValuesExpression::columns() is deprecated. ' .
+            'Use ValuesExpression::setColumns()/getColumns() instead.'
+        );
         if ($cols !== null) {
             return $this->setColumns($cols);
         }
@@ -200,6 +204,10 @@ class ValuesExpression implements ExpressionInterface
      */
     public function values($values = null)
     {
+        deprecationWarning(
+            'ValuesExpression::values() is deprecated. ' .
+            'Use ValuesExpression::setValues()/getValues() instead.'
+        );
         if ($values !== null) {
             return $this->setValues($values);
         }
@@ -243,6 +251,10 @@ class ValuesExpression implements ExpressionInterface
      */
     public function query(Query $query = null)
     {
+        deprecationWarning(
+            'ValuesExpression::query() is deprecated. ' .
+            'Use ValuesExpression::setQuery()/getQuery() instead.'
+        );
         if ($query !== null) {
             return $this->setQuery($query);
         }
@@ -364,7 +376,7 @@ class ValuesExpression implements ExpressionInterface
 
         foreach ($this->_values as $row => $values) {
             foreach ($types as $col => $type) {
-                /* @var \Cake\Database\Type\ExpressionTypeInterface $type */
+                /** @var \Cake\Database\Type\ExpressionTypeInterface $type */
                 $this->_values[$row][$col] = $type->toExpression($values[$col]);
             }
         }

@@ -17,6 +17,7 @@ namespace Cake\Database\Type;
 use Cake\Database\Driver;
 use Cake\Database\Type;
 use Cake\Database\TypeInterface;
+use Cake\Database\Type\BatchCastingInterface;
 use InvalidArgumentException;
 use PDO;
 
@@ -25,7 +26,7 @@ use PDO;
  *
  * Use to convert json data between PHP and the database types.
  */
-class JsonType extends Type implements TypeInterface
+class JsonType extends Type implements TypeInterface, BatchCastingInterface
 {
     /**
      * Identifier name for this type.
@@ -71,11 +72,29 @@ class JsonType extends Type implements TypeInterface
      *
      * @param mixed $value The value to convert.
      * @param \Cake\Database\Driver $driver The driver instance to convert with.
-     * @return string|null|array
+     * @return string|array|null
      */
     public function toPHP($value, Driver $driver)
     {
         return json_decode($value, true);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return array
+     */
+    public function manyToPHP(array $values, array $fields, Driver $driver)
+    {
+        foreach ($fields as $field) {
+            if (!isset($values[$field])) {
+                continue;
+            }
+
+            $values[$field] = json_decode($values[$field], true);
+        }
+
+        return $values;
     }
 
     /**
@@ -91,7 +110,7 @@ class JsonType extends Type implements TypeInterface
     }
 
     /**
-     * Marshalls request data into a JSON compatible structure.
+     * Marshals request data into a JSON compatible structure.
      *
      * @param mixed $value The value to convert.
      * @return mixed Converted value.

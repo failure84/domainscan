@@ -19,12 +19,9 @@ use InvalidArgumentException;
 
 /**
  * Storage engine for CakePHP caching
- *
- * @mixin \Cake\Core\InstanceConfigTrait
  */
 abstract class CacheEngine
 {
-
     use InstanceConfigTrait;
 
     /**
@@ -38,6 +35,8 @@ abstract class CacheEngine
      *    with either another cache config or another application.
      * - `probability` Probability of hitting a cache gc cleanup. Setting to 0 will disable
      *    cache::gc from ever being called automatically.
+     * - `warnOnWriteFailures` Some engines, such as ApcuEngine, may raise warnings on
+     *    write failures.
      *
      * @var array
      */
@@ -45,7 +44,8 @@ abstract class CacheEngine
         'duration' => 3600,
         'groups' => [],
         'prefix' => 'cake_',
-        'probability' => 100
+        'probability' => 100,
+        'warnOnWriteFailures' => true,
     ];
 
     /**
@@ -231,7 +231,7 @@ abstract class CacheEngine
      * and returns the `group value` for each of them, this is
      * the token representing each group in the cache key
      *
-     * @return array
+     * @return string[]
      */
     public function groups()
     {
@@ -242,7 +242,7 @@ abstract class CacheEngine
      * Generates a safe key for use with cache engine storage engines.
      *
      * @param string $key the key passed over
-     * @return bool|string string key or false
+     * @return string|false string key or false
      */
     public function key($key)
     {
@@ -264,7 +264,7 @@ abstract class CacheEngine
      * Generates a safe key, taking account of the configured key prefix
      *
      * @param string $key the key passed over
-     * @return mixed string $key or false
+     * @return string Key
      * @throws \InvalidArgumentException If key's value is empty
      */
     protected function _key($key)
@@ -275,5 +275,21 @@ abstract class CacheEngine
         }
 
         return $this->_config['prefix'] . $key;
+    }
+
+    /**
+     * Cache Engines may trigger warnings if they encounter failures during operation,
+     * if option warnOnWriteFailures is set to true.
+     *
+     * @param string $message The warning message.
+     * @return void
+     */
+    protected function warning($message)
+    {
+        if ($this->getConfig('warnOnWriteFailures') !== true) {
+            return;
+        }
+
+        triggerWarning($message);
     }
 }

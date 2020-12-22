@@ -22,7 +22,6 @@ use Cake\Datasource\ConnectionInterface;
  */
 class CachedCollection extends Collection
 {
-
     /**
      * The name of the cache config key to use for caching table metadata,
      * of false if disabled.
@@ -119,6 +118,10 @@ class CachedCollection extends Collection
      */
     public function cacheMetadata($enable = null)
     {
+        deprecationWarning(
+            'CachedCollection::cacheMetadata() is deprecated. ' .
+            'Use CachedCollection::setCacheMetadata()/getCacheMetadata() instead.'
+        );
         if ($enable !== null) {
             $this->setCacheMetadata($enable);
         }

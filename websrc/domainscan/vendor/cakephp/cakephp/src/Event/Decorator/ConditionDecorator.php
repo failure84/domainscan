@@ -25,7 +25,6 @@ use RuntimeException;
  */
 class ConditionDecorator extends AbstractDecorator
 {
-
     /**
      * {@inheritDoc}
      */
@@ -63,11 +62,7 @@ class ConditionDecorator extends AbstractDecorator
     protected function _evaluateCondition($condition, Event $event)
     {
         if (!isset($this->_options[$condition])) {
-            if ($condition === 'unless') {
-                return false;
-            }
-
-            return true;
+            return $condition !== 'unless';
         }
         if (!is_callable($this->_options[$condition])) {
             throw new RuntimeException(self::class . ' the `' . $condition . '` condition is not a callable!');

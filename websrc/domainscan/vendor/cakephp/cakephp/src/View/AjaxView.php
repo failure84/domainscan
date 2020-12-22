@@ -25,12 +25,10 @@ use Cake\Http\ServerRequest;
  */
 class AjaxView extends View
 {
-
     /**
-     *
-     * @var string
+     * {@inheritDoc}
      */
-    public $layout = 'ajax';
+    protected $layout = 'ajax';
 
     /**
      * Constructor
@@ -46,10 +44,10 @@ class AjaxView extends View
         EventManager $eventManager = null,
         array $viewOptions = []
     ) {
-        parent::__construct($request, $response, $eventManager, $viewOptions);
-
         if ($response && $response instanceof Response) {
-            $response->type('ajax');
+            $response = $response->withType('ajax');
         }
+
+        parent::__construct($request, $response, $eventManager, $viewOptions);
     }
 }

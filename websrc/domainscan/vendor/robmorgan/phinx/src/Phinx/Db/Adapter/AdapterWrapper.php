@@ -1,37 +1,14 @@
 <?php
+
 /**
- * Phinx
- *
- * (The MIT license)
- * Copyright (c) 2015 Rob Morgan
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated * documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- *
- * @package    Phinx
- * @subpackage Phinx\Db\Adapter
+ * MIT License
+ * For full license information, please view the LICENSE file that was distributed with this source code.
  */
+
 namespace Phinx\Db\Adapter;
 
-use Phinx\Db\Table;
 use Phinx\Db\Table\Column;
-use Phinx\Db\Table\Index;
-use Phinx\Db\Table\ForeignKey;
+use Phinx\Db\Table\Table;
 use Phinx\Migration\MigrationInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -47,12 +24,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
 {
     /**
-     * @var AdapterInterface
+     * @var \Phinx\Db\Adapter\AdapterInterface
      */
     protected $adapter;
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function __construct(AdapterInterface $adapter)
     {
@@ -60,16 +37,17 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function setAdapter(AdapterInterface $adapter)
     {
         $this->adapter = $adapter;
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getAdapter()
     {
@@ -77,16 +55,17 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function setOptions(array $options)
     {
         $this->adapter->setOptions($options);
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getOptions()
     {
@@ -94,7 +73,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasOption($name)
     {
@@ -102,7 +81,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getOption($name)
     {
@@ -110,16 +89,17 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function setInput(InputInterface $input)
     {
         $this->adapter->setInput($input);
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getInput()
     {
@@ -127,16 +107,17 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function setOutput(OutputInterface $output)
     {
         $this->adapter->setOutput($output);
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getOutput()
     {
@@ -144,7 +125,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function connect()
     {
@@ -152,7 +135,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function disconnect()
     {
@@ -160,7 +145,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function execute($sql)
     {
@@ -168,7 +153,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function query($sql)
     {
@@ -176,7 +161,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function insert(Table $table, $row)
     {
@@ -184,7 +171,17 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
+     */
+    public function bulkinsert(Table $table, $rows)
+    {
+        $this->getAdapter()->bulkinsert($table, $rows);
+    }
+
+    /**
+     * @inheritDoc
      */
     public function fetchRow($sql)
     {
@@ -192,7 +189,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function fetchAll($sql)
     {
@@ -200,7 +197,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getVersions()
     {
@@ -208,7 +205,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getVersionLog()
     {
@@ -216,11 +213,12 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function migrated(MigrationInterface $migration, $direction, $startTime, $endTime)
     {
         $this->getAdapter()->migrated($migration, $direction, $startTime, $endTime);
+
         return $this;
     }
 
@@ -230,6 +228,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     public function toggleBreakpoint(MigrationInterface $migration)
     {
         $this->getAdapter()->toggleBreakpoint($migration);
+
         return $this;
     }
 
@@ -242,7 +241,27 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
+     */
+    public function setBreakpoint(MigrationInterface $migration)
+    {
+        $this->getAdapter()->setBreakpoint($migration);
+
+        return $this;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function unsetBreakpoint(MigrationInterface $migration)
+    {
+        $this->getAdapter()->unsetBreakpoint($migration);
+
+        return $this;
+    }
+
+    /**
+     * @inheritDoc
      */
     public function hasSchemaTable()
     {
@@ -250,7 +269,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function createSchemaTable()
     {
@@ -258,7 +279,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getColumnTypes()
     {
@@ -266,7 +287,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function isValidColumnType(Column $column)
     {
@@ -274,7 +295,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasTransactions()
     {
@@ -282,7 +303,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function beginTransaction()
     {
@@ -290,7 +313,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function commitTransaction()
     {
@@ -298,7 +323,9 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function rollbackTransaction()
     {
@@ -306,7 +333,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function quoteTableName($tableName)
     {
@@ -314,7 +341,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function quoteColumnName($columnName)
     {
@@ -322,7 +349,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasTable($tableName)
     {
@@ -330,31 +357,17 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
-    public function createTable(Table $table)
+    public function createTable(Table $table, array $columns = [], array $indexes = [])
     {
-        $this->getAdapter()->createTable($table);
+        $this->getAdapter()->createTable($table, $columns, $indexes);
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function renameTable($tableName, $newTableName)
-    {
-        $this->getAdapter()->renameTable($tableName, $newTableName);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dropTable($tableName)
-    {
-        $this->getAdapter()->dropTable($tableName);
-    }
-
-    /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getColumns($tableName)
     {
@@ -362,7 +375,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasColumn($tableName, $columnName)
     {
@@ -370,39 +383,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function addColumn(Table $table, Column $column)
-    {
-        $this->getAdapter()->addColumn($table, $column);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function renameColumn($tableName, $columnName, $newColumnName)
-    {
-        $this->getAdapter()->renameColumn($tableName, $columnName, $newColumnName);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function changeColumn($tableName, $columnName, Column $newColumn)
-    {
-        return $this->getAdapter()->changeColumn($tableName, $columnName, $newColumn);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dropColumn($tableName, $columnName)
-    {
-        $this->getAdapter()->dropColumn($tableName, $columnName);
-    }
-
-    /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasIndex($tableName, $columns)
     {
@@ -410,7 +391,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasIndexByName($tableName, $indexName)
     {
@@ -418,31 +399,15 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    public function addIndex(Table $table, Index $index)
+    public function hasPrimaryKey($tableName, $columns, $constraint = null)
     {
-        $this->getAdapter()->addIndex($table, $index);
+        return $this->getAdapter()->hasPrimaryKey($tableName, $columns, $constraint);
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function dropIndex($tableName, $columns)
-    {
-        $this->getAdapter()->dropIndex($tableName, $columns);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dropIndexByName($tableName, $indexName)
-    {
-        $this->getAdapter()->dropIndexByName($tableName, $indexName);
-    }
-
-    /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasForeignKey($tableName, $columns, $constraint = null)
     {
@@ -450,23 +415,7 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function addForeignKey(Table $table, ForeignKey $foreignKey)
-    {
-        $this->getAdapter()->addForeignKey($table, $foreignKey);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dropForeignKey($tableName, $columns, $constraint = null)
-    {
-        $this->getAdapter()->dropForeignKey($tableName, $columns, $constraint);
-    }
-
-    /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getSqlType($type, $limit = null)
     {
@@ -474,23 +423,27 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
-    public function createDatabase($name, $options = array())
+    public function createDatabase($name, $options = [])
     {
         $this->getAdapter()->createDatabase($name, $options);
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasDatabase($name)
     {
-        $this->getAdapter()->hasDatabase($name);
+        return $this->getAdapter()->hasDatabase($name);
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
      */
     public function dropDatabase($name)
     {
@@ -498,10 +451,66 @@ abstract class AdapterWrapper implements AdapterInterface, WrapperInterface
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
+     *
+     * @return void
+     */
+    public function createSchema($schemaName = 'public')
+    {
+        $this->getAdapter()->createSchema($schemaName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return void
+     */
+    public function dropSchema($schemaName)
+    {
+        $this->getAdapter()->dropSchema($schemaName);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return void
+     */
+    public function truncateTable($tableName)
+    {
+        $this->getAdapter()->truncateTable($tableName);
+    }
+
+    /**
+     * @inheritDoc
      */
     public function castToBool($value)
     {
         return $this->getAdapter()->castToBool($value);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getConnection()
+    {
+        return $this->getAdapter()->getConnection();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return void
+     */
+    public function executeActions(Table $table, array $actions)
+    {
+        $this->getAdapter()->executeActions($table, $actions);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getQueryBuilder()
+    {
+        return $this->getAdapter()->getQueryBuilder();
     }
 }

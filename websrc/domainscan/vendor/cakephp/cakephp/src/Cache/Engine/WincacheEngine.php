@@ -23,7 +23,6 @@ use Cake\Cache\CacheEngine;
  */
 class WincacheEngine extends CacheEngine
 {
-
     /**
      * Contains the compiled group names
      * (prefixed with the global configuration prefix)
@@ -61,17 +60,9 @@ class WincacheEngine extends CacheEngine
     public function write($key, $value)
     {
         $key = $this->_key($key);
-
         $duration = $this->_config['duration'];
-        $expires = time() + $duration;
 
-        $data = [
-            $key . '_expires' => $expires,
-            $key => $value
-        ];
-        $result = wincache_ucache_set($data, null, $duration);
-
-        return empty($result);
+        return wincache_ucache_set($key, $value, $duration);
     }
 
     /**
@@ -85,12 +76,6 @@ class WincacheEngine extends CacheEngine
     {
         $key = $this->_key($key);
 
-        $time = time();
-        $cachetime = (int)wincache_ucache_get($key . '_expires');
-        if ($cachetime < $time || ($time + $this->_config['duration']) < $cachetime) {
-            return false;
-        }
-
         return wincache_ucache_get($key);
     }
 
@@ -99,7 +84,7 @@ class WincacheEngine extends CacheEngine
      *
      * @param string $key Identifier for the data
      * @param int $offset How much to increment
-     * @return bool|int New incremented value, false otherwise
+     * @return int|false New incremented value, false otherwise
      */
     public function increment($key, $offset = 1)
     {
@@ -113,7 +98,7 @@ class WincacheEngine extends CacheEngine
      *
      * @param string $key Identifier for the data
      * @param int $offset How much to subtract
-     * @return bool|int New decremented value, false otherwise
+     * @return int|false New decremented value, false otherwise
      */
     public function decrement($key, $offset = 1)
     {
@@ -165,7 +150,7 @@ class WincacheEngine extends CacheEngine
      * If the group initial value was not found, then it initializes
      * the group accordingly.
      *
-     * @return array
+     * @return string[]
      */
     public function groups()
     {

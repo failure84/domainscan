@@ -39,7 +39,6 @@ use RuntimeException;
  */
 abstract class ObjectRegistry implements Countable, IteratorAggregate
 {
-
     /**
      * Map of loaded objects.
      *
@@ -70,6 +69,7 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
      * @param string $objectName The name/class of the object to load.
      * @param array $config Additional settings to use when loading the object.
      * @return mixed
+     * @throws \Exception If the class cannot be found.
      */
     public function load($objectName, $config = [])
     {
@@ -119,7 +119,7 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
     {
         /** @var \Cake\Core\InstanceConfigTrait $existing */
         $existing = $this->_loaded[$name];
-        $msg = sprintf('The "%s" alias has already been loaded', $name);
+        $msg = sprintf('The "%s" alias has already been loaded.', $name);
         $hasConfig = method_exists($existing, 'config');
         if (!$hasConfig) {
             throw new RuntimeException($msg);
@@ -130,22 +130,24 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
         $existingConfig = $existing->getConfig();
         unset($config['enabled'], $existingConfig['enabled']);
 
-        $fail = false;
+        $failure = null;
         foreach ($config as $key => $value) {
             if (!array_key_exists($key, $existingConfig)) {
-                $fail = true;
+                $failure = " The `{$key}` was not defined in the previous configuration data.";
                 break;
             }
             if (isset($existingConfig[$key]) && $existingConfig[$key] !== $value) {
-                $fail = true;
+                $failure = sprintf(
+                    ' The `%s` key has a value of `%s` but previously had a value of `%s`',
+                    $key,
+                    json_encode($value),
+                    json_encode($existingConfig[$key])
+                );
                 break;
             }
         }
-        if ($fail) {
-            $msg .= ' with the following config: ';
-            $msg .= var_export($existingConfig, true);
-            $msg .= ' which differs from ' . var_export($config, true);
-            throw new RuntimeException($msg);
+        if ($failure) {
+            throw new RuntimeException($msg . $failure);
         }
     }
 
@@ -153,7 +155,7 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
      * Should resolve the classname for a given object type.
      *
      * @param string $class The class to resolve.
-     * @return string|bool The resolved name or false for failure.
+     * @return string|false The resolved name or false for failure.
      */
     abstract protected function _resolveClassName($class);
 
@@ -183,7 +185,7 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
     /**
      * Get the list of loaded objects.
      *
-     * @return array List of object names.
+     * @return string[] List of object names.
      */
     public function loaded()
     {
@@ -323,7 +325,7 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
             $this->unload($objectName);
         }
         if ($this instanceof EventDispatcherInterface && $object instanceof EventListenerInterface) {
-            $this->eventManager()->on($object);
+            $this->getEventManager()->on($object);
         }
         $this->_loaded[$name] = $object;
 
@@ -347,7 +349,7 @@ abstract class ObjectRegistry implements Countable, IteratorAggregate
 
         $object = $this->_loaded[$objectName];
         if ($this instanceof EventDispatcherInterface && $object instanceof EventListenerInterface) {
-            $this->eventManager()->off($object);
+            $this->getEventManager()->off($object);
         }
         unset($this->_loaded[$objectName]);
 

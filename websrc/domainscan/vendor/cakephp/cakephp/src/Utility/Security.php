@@ -17,13 +17,13 @@ namespace Cake\Utility;
 use Cake\Utility\Crypto\Mcrypt;
 use Cake\Utility\Crypto\OpenSsl;
 use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Security Library contains utility methods related to security
  */
 class Security
 {
-
     /**
      * Default hash method. If `$type` param for `Security::hash()` is not specified
      * this value is used. Defaults to 'sha1'.
@@ -50,20 +50,30 @@ class Security
      * Create a hash from string using given method.
      *
      * @param string $string String to hash
-     * @param string|null $type Hashing algo to use (i.e. sha1, sha256 etc.).
+     * @param string|null $algorithm Hashing algo to use (i.e. sha1, sha256 etc.).
      *   Can be any valid algo included in list returned by hash_algos().
      *   If no value is passed the type specified by `Security::$hashType` is used.
      * @param mixed $salt If true, automatically prepends the application's salt
      *   value to $string (Security.salt).
      * @return string Hash
-     * @link https://book.cakephp.org/3.0/en/core-libraries/security.html#hashing-data
+     * @throws \RuntimeException
+     * @link https://book.cakephp.org/3/en/core-libraries/security.html#hashing-data
      */
-    public static function hash($string, $type = null, $salt = false)
+    public static function hash($string, $algorithm = null, $salt = false)
     {
-        if (empty($type)) {
-            $type = static::$hashType;
+        if (empty($algorithm)) {
+            $algorithm = static::$hashType;
         }
-        $type = strtolower($type);
+        $algorithm = strtolower($algorithm);
+
+        $availableAlgorithms = hash_algos();
+        if (!in_array($algorithm, $availableAlgorithms, true)) {
+            throw new RuntimeException(sprintf(
+                'The hash type `%s` was not found. Available algorithms are: %s',
+                $algorithm,
+                implode(', ', $availableAlgorithms)
+            ));
+        }
 
         if ($salt) {
             if (!is_string($salt)) {
@@ -72,7 +82,7 @@ class Security
             $string = $salt . $string;
         }
 
-        return hash($type, $string);
+        return hash($algorithm, $string);
     }
 
     /**
@@ -102,27 +112,41 @@ class Security
         if (function_exists('random_bytes')) {
             return random_bytes($length);
         }
-        if (function_exists('openssl_random_pseudo_bytes')) {
-            $bytes = openssl_random_pseudo_bytes($length, $strongSource);
-            if (!$strongSource) {
-                trigger_error(
-                    'openssl was unable to use a strong source of entropy. ' .
-                    'Consider updating your system libraries, or ensuring ' .
-                    'you have more available entropy.',
-                    E_USER_WARNING
-                );
-            }
-
-            return $bytes;
+        if (!function_exists('openssl_random_pseudo_bytes')) {
+            throw new RuntimeException(
+                'You do not have a safe source of random data available. ' .
+                'Install either the openssl extension, or paragonie/random_compat. ' .
+                'Or use Security::insecureRandomBytes() alternatively.'
+            );
         }
-        trigger_error(
-            'You do not have a safe source of random data available. ' .
-            'Install either the openssl extension, or paragonie/random_compat. ' .
-            'Falling back to an insecure random source.',
-            E_USER_WARNING
-        );
 
-        return static::insecureRandomBytes($length);
+        $bytes = openssl_random_pseudo_bytes($length, $strongSource);
+        if (!$strongSource) {
+            trigger_error(
+                'openssl was unable to use a strong source of entropy. ' .
+                'Consider updating your system libraries, or ensuring ' .
+                'you have more available entropy.',
+                E_USER_WARNING
+            );
+        }
+
+        return $bytes;
+    }
+
+    /**
+     * Creates a secure random string.
+     *
+     * @param int $length String length. Default 64.
+     * @return string
+     * @since 3.6.0
+     */
+    public static function randomString($length = 64)
+    {
+        return substr(
+            bin2hex(Security::randomBytes(ceil($length / 2))),
+            0,
+            $length
+        );
     }
 
     /**
@@ -184,7 +208,12 @@ class Security
      * @param string $key Key to use as the encryption key for encrypted data.
      * @param string $operation Operation to perform, encrypt or decrypt
      * @throws \InvalidArgumentException When there are errors.
-     * @return string Encrypted/Decrypted string
+     * @return string Encrypted/Decrypted string.
+     * @deprecated 3.6.3 This method relies on functions provided by mcrypt
+     *   extension which has been deprecated in PHP 7.1 and removed in PHP 7.2.
+     *   There's no 1:1 replacement for this method.
+     *   Upgrade your code to use Security::encrypt()/Security::decrypt() with
+     *   OpenSsl engine instead.
      */
     public static function rijndael($text, $key, $operation)
     {
@@ -349,6 +378,10 @@ class Security
      */
     public static function salt($salt = null)
     {
+        deprecationWarning(
+            'Security::salt() is deprecated. ' .
+            'Use Security::getSalt()/setSalt() instead.'
+        );
         if ($salt === null) {
             return static::$_salt;
         }

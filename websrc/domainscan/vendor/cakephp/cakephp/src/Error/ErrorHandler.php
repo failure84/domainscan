@@ -17,17 +17,18 @@
 namespace Cake\Error;
 
 use Cake\Core\App;
+use Cake\Http\ResponseEmitter;
 use Exception;
 use Throwable;
 
 /**
  * Error Handler provides basic error and exception handling for your application. It captures and
- * handles all unhandled exceptions and errors. Displays helpful framework errors when debug > 1.
+ * handles all unhandled exceptions and errors. Displays helpful framework errors when debug mode is on.
  *
  * ### Uncaught exceptions
  *
- * When debug < 1 a CakeException will render 404 or 500 errors. If an uncaught exception is thrown
- * and it is a type that ErrorHandler does not know about it will be treated as a 500 error.
+ * When debug mode is off a ExceptionRenderer will render 404 or 500 errors. If an uncaught exception is thrown
+ * and it is a type that ExceptionRenderer does not know about it will be treated as a 500 error.
  *
  * ### Implementing application specific exception handling
  *
@@ -105,8 +106,6 @@ class ErrorHandler extends BaseErrorHandler
      *
      * Template method of BaseErrorHandler.
      *
-     * Only when debug > 2 will a formatted error be displayed.
-     *
      * @param array $error An array of error data.
      * @param bool $debug Whether or not the app is in debug mode.
      * @return void
@@ -173,9 +172,11 @@ class ErrorHandler extends BaseErrorHandler
         // Disable trace for internal errors.
         $this->_options['trace'] = false;
         $message = sprintf(
-            "[%s] %s\n%s", // Keeping same message format
+            "[%s] %s (%s:%s)\n%s", // Keeping same message format
             get_class($exception),
             $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine(),
             $exception->getTraceAsString()
         );
         trigger_error($message, E_USER_ERROR);
@@ -194,6 +195,8 @@ class ErrorHandler extends BaseErrorHandler
 
             return;
         }
-        $response->send();
+
+        $emitter = new ResponseEmitter();
+        $emitter->emit($response);
     }
 }

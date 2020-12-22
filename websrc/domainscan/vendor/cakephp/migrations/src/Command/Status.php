@@ -19,7 +19,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class Status extends StatusCommand
 {
-
     use CommandTrait;
     use ConfigurationTrait;
 
@@ -47,7 +46,7 @@ class Status extends StatusCommand
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input the input object
      * @param \Symfony\Component\Console\Output\OutputInterface $output the output object
-     * @return void
+     * @return int
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -78,12 +77,14 @@ class Status extends StatusCommand
                 $this->display($migrations);
                 break;
         }
+
+        return BaseCommand::CODE_SUCCESS;
     }
 
     /**
      * Will output the status of the migrations
      *
-     * @param array $migrations
+     * @param array $migrations Migrations array.
      * @return void
      */
     protected function display(array $migrations)
@@ -108,10 +109,10 @@ class Status extends StatusCommand
                 }
 
                 $output->writeln(
-                    $status
-                    . sprintf(' %14.0f ', $migration['id'])
-                    . $name
-                    . $missingComment
+                    $status .
+                    sprintf(' %14.0f ', $migration['id']) .
+                    $name .
+                    $missingComment
                 );
             }
 

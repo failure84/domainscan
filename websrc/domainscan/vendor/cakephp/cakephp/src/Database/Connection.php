@@ -15,6 +15,7 @@
 namespace Cake\Database;
 
 use Cake\Core\App;
+use Cake\Core\Retry\CommandRetry;
 use Cake\Database\Exception\MissingConnectionException;
 use Cake\Database\Exception\MissingDriverException;
 use Cake\Database\Exception\MissingExtensionException;
@@ -22,6 +23,7 @@ use Cake\Database\Exception\NestedTransactionRollbackException;
 use Cake\Database\Log\LoggedQuery;
 use Cake\Database\Log\LoggingStatement;
 use Cake\Database\Log\QueryLogger;
+use Cake\Database\Retry\ReconnectStrategy;
 use Cake\Database\Schema\CachedCollection;
 use Cake\Database\Schema\Collection as SchemaCollection;
 use Cake\Datasource\ConnectionInterface;
@@ -33,7 +35,6 @@ use Exception;
  */
 class Connection implements ConnectionInterface
 {
-
     use TypeConverterTrait;
 
     /**
@@ -118,7 +119,7 @@ class Connection implements ConnectionInterface
         $this->setDriver($driver, $config);
 
         if (!empty($config['log'])) {
-            $this->logQueries($config['log']);
+            $this->enableQueryLogging($config['log']);
         }
     }
 
@@ -183,6 +184,17 @@ class Connection implements ConnectionInterface
     }
 
     /**
+     * Get the retry wrapper object that is allows recovery from server disconnects
+     * while performing certain database actions, such as executing a query.
+     *
+     * @return \Cake\Core\Retry\CommandRetry The retry wrapper
+     */
+    public function getDisconnectRetry()
+    {
+        return new CommandRetry(new ReconnectStrategy($this));
+    }
+
+    /**
      * Gets the driver instance.
      *
      * @return \Cake\Database\Driver
@@ -207,6 +219,7 @@ class Connection implements ConnectionInterface
      */
     public function driver($driver = null, $config = [])
     {
+        deprecationWarning('Connection::driver() is deprecated. Use Connection::setDriver()/getDriver() instead.');
         if ($driver !== null) {
             $this->setDriver($driver, $config);
         }
@@ -225,7 +238,7 @@ class Connection implements ConnectionInterface
         try {
             return $this->_driver->connect();
         } catch (Exception $e) {
-            throw new MissingConnectionException(['reason' => $e->getMessage()]);
+            throw new MissingConnectionException(['reason' => $e->getMessage()], null, $e);
         }
     }
 
@@ -257,13 +270,15 @@ class Connection implements ConnectionInterface
      */
     public function prepare($sql)
     {
-        $statement = $this->_driver->prepare($sql);
+        return $this->getDisconnectRetry()->run(function () use ($sql) {
+            $statement = $this->_driver->prepare($sql);
 
-        if ($this->_logQueries) {
-            $statement = $this->_newLogger($statement);
-        }
+            if ($this->_logQueries) {
+                $statement = $this->_newLogger($statement);
+            }
 
-        return $statement;
+            return $statement;
+        });
     }
 
     /**
@@ -277,15 +292,17 @@ class Connection implements ConnectionInterface
      */
     public function execute($query, array $params = [], array $types = [])
     {
-        if (!empty($params)) {
-            $statement = $this->prepare($query);
-            $statement->bind($params, $types);
-            $statement->execute();
-        } else {
-            $statement = $this->query($query);
-        }
+        return $this->getDisconnectRetry()->run(function () use ($query, $params, $types) {
+            if (!empty($params)) {
+                $statement = $this->prepare($query);
+                $statement->bind($params, $types);
+                $statement->execute();
+            } else {
+                $statement = $this->query($query);
+            }
 
-        return $statement;
+            return $statement;
+        });
     }
 
     /**
@@ -310,11 +327,13 @@ class Connection implements ConnectionInterface
      */
     public function run(Query $query)
     {
-        $statement = $this->prepare($query);
-        $query->getValueBinder()->attachTo($statement);
-        $statement->execute();
+        return $this->getDisconnectRetry()->run(function () use ($query) {
+            $statement = $this->prepare($query);
+            $query->getValueBinder()->attachTo($statement);
+            $statement->execute();
 
-        return $statement;
+            return $statement;
+        });
     }
 
     /**
@@ -325,10 +344,12 @@ class Connection implements ConnectionInterface
      */
     public function query($sql)
     {
-        $statement = $this->prepare($sql);
-        $statement->execute();
+        return $this->getDisconnectRetry()->run(function () use ($sql) {
+            $statement = $this->prepare($sql);
+            $statement->execute();
 
-        return $statement;
+            return $statement;
+        });
     }
 
     /**
@@ -381,6 +402,10 @@ class Connection implements ConnectionInterface
      */
     public function schemaCollection(SchemaCollection $collection = null)
     {
+        deprecationWarning(
+            'Connection::schemaCollection() is deprecated. ' .
+            'Use Connection::setSchemaCollection()/getSchemaCollection() instead.'
+        );
         if ($collection !== null) {
             $this->setSchemaCollection($collection);
         }
@@ -398,12 +423,14 @@ class Connection implements ConnectionInterface
      */
     public function insert($table, array $data, array $types = [])
     {
-        $columns = array_keys($data);
+        return $this->getDisconnectRetry()->run(function () use ($table, $data, $types) {
+            $columns = array_keys($data);
 
-        return $this->newQuery()->insert($columns, $types)
-            ->into($table)
-            ->values($data)
-            ->execute();
+            return $this->newQuery()->insert($columns, $types)
+                ->into($table)
+                ->values($data)
+                ->execute();
+        });
     }
 
     /**
@@ -417,10 +444,12 @@ class Connection implements ConnectionInterface
      */
     public function update($table, array $data, array $conditions = [], $types = [])
     {
-        return $this->newQuery()->update($table)
-            ->set($data, $types)
-            ->where($conditions, $types)
-            ->execute();
+        return $this->getDisconnectRetry()->run(function () use ($table, $data, $conditions, $types) {
+            return $this->newQuery()->update($table)
+                ->set($data, $types)
+                ->where($conditions, $types)
+                ->execute();
+        });
     }
 
     /**
@@ -433,9 +462,11 @@ class Connection implements ConnectionInterface
      */
     public function delete($table, $conditions = [], $types = [])
     {
-        return $this->newQuery()->delete($table)
-            ->where($conditions, $types)
-            ->execute();
+        return $this->getDisconnectRetry()->run(function () use ($table, $conditions, $types) {
+            return $this->newQuery()->delete($table)
+                ->where($conditions, $types)
+                ->execute();
+        });
     }
 
     /**
@@ -449,7 +480,11 @@ class Connection implements ConnectionInterface
             if ($this->_logQueries) {
                 $this->log('BEGIN');
             }
-            $this->_driver->beginTransaction();
+
+            $this->getDisconnectRetry()->run(function () {
+                $this->_driver->beginTransaction();
+            });
+
             $this->_transactionLevel = 0;
             $this->_transactionStarted = true;
             $this->nestedTransactionRollbackException = null;
@@ -563,6 +598,18 @@ class Connection implements ConnectionInterface
     }
 
     /**
+     * Disables the usage of savepoints.
+     *
+     * @return $this
+     */
+    public function disableSavePoints()
+    {
+        $this->_useSavePoints = false;
+
+        return $this;
+    }
+
+    /**
      * Returns whether this connection is using savepoints for nested transactions
      *
      * @return bool true if enabled, false otherwise
@@ -592,6 +639,10 @@ class Connection implements ConnectionInterface
      */
     public function useSavePoints($enable = null)
     {
+        deprecationWarning(
+            'Connection::useSavePoints() is deprecated. ' .
+            'Use Connection::enableSavePoints()/isSavePointsEnabled() instead.'
+        );
         if ($enable !== null) {
             $this->enableSavePoints($enable);
         }
@@ -602,7 +653,7 @@ class Connection implements ConnectionInterface
     /**
      * Creates a new save point for nested transactions.
      *
-     * @param string $name The save point name.
+     * @param string|int $name The save point name.
      * @return void
      */
     public function createSavePoint($name)
@@ -613,7 +664,7 @@ class Connection implements ConnectionInterface
     /**
      * Releases a save point by its name.
      *
-     * @param string $name The save point name.
+     * @param string|int $name The save point name.
      * @return void
      */
     public function releaseSavePoint($name)
@@ -624,7 +675,7 @@ class Connection implements ConnectionInterface
     /**
      * Rollback a save point by its name.
      *
-     * @param string $name The save point name.
+     * @param string|int $name The save point name.
      * @return void
      */
     public function rollbackSavepoint($name)
@@ -639,7 +690,9 @@ class Connection implements ConnectionInterface
      */
     public function disableForeignKeys()
     {
-        $this->execute($this->_driver->disableForeignKeySQL())->closeCursor();
+        $this->getDisconnectRetry()->run(function () {
+            $this->execute($this->_driver->disableForeignKeySQL())->closeCursor();
+        });
     }
 
     /**
@@ -649,7 +702,9 @@ class Connection implements ConnectionInterface
      */
     public function enableForeignKeys()
     {
-        $this->execute($this->_driver->enableForeignKeySQL())->closeCursor();
+        $this->getDisconnectRetry()->run(function () {
+            $this->execute($this->_driver->enableForeignKeySQL())->closeCursor();
+        });
     }
 
     /**
@@ -724,18 +779,20 @@ class Connection implements ConnectionInterface
      */
     public function disableConstraints(callable $callback)
     {
-        $this->disableForeignKeys();
+        return $this->getDisconnectRetry()->run(function () use ($callback) {
+            $this->disableForeignKeys();
 
-        try {
-            $result = $callback($this);
-        } catch (Exception $e) {
+            try {
+                $result = $callback($this);
+            } catch (Exception $e) {
+                $this->enableForeignKeys();
+                throw $e;
+            }
+
             $this->enableForeignKeys();
-            throw $e;
-        }
 
-        $this->enableForeignKeys();
-
-        return $result;
+            return $result;
+        });
     }
 
     /**
@@ -801,13 +858,54 @@ class Connection implements ConnectionInterface
 
     /**
      * {@inheritDoc}
+     *
+     * @deprecated 3.7.0 Use enableQueryLogging() and isQueryLoggingEnabled() instead.
      */
     public function logQueries($enable = null)
     {
+        deprecationWarning(
+            'Connection::logQueries() is deprecated. ' .
+            'Use enableQueryLogging() and isQueryLoggingEnabled() instead.'
+        );
         if ($enable === null) {
             return $this->_logQueries;
         }
         $this->_logQueries = $enable;
+    }
+
+    /**
+     * Enable/disable query logging
+     *
+     * @param bool $value Enable/disable query logging
+     * @return $this
+     */
+    public function enableQueryLogging($value)
+    {
+        $this->_logQueries = (bool)$value;
+
+        return $this;
+    }
+
+    /**
+     * Disable query logging
+     *
+     * @return $this
+     */
+    public function disableQueryLogging()
+    {
+        $this->_logQueries = false;
+
+        return $this;
+    }
+
+    /**
+     * Check if query logging is enabled.
+     *
+     * @return bool
+     */
+    public function isQueryLoggingEnabled()
+    {
+        return $this->_logQueries;
     }
 
     /**
@@ -817,6 +915,10 @@ class Connection implements ConnectionInterface
      */
     public function logger($instance = null)
     {
+        deprecationWarning(
+            'Connection::logger() is deprecated. ' .
+            'Use Connection::setLogger()/getLogger() instead.'
+        );
         if ($instance === null) {
             return $this->getLogger();
         }
@@ -892,7 +994,7 @@ class Connection implements ConnectionInterface
             'username' => '*****',
             'host' => '*****',
             'database' => '*****',
-            'port' => '*****'
+            'port' => '*****',
         ];
         $replace = array_intersect_key($secrets, $this->_config);
         $config = $replace + $this->_config;
@@ -904,7 +1006,7 @@ class Connection implements ConnectionInterface
             'transactionStarted' => $this->_transactionStarted,
             'useSavePoints' => $this->_useSavePoints,
             'logQueries' => $this->_logQueries,
-            'logger' => $this->_logger
+            'logger' => $this->_logger,
         ];
     }
 }

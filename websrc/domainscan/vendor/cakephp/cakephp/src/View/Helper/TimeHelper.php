@@ -24,12 +24,11 @@ use Exception;
  *
  * Manipulation of time data.
  *
- * @link https://book.cakephp.org/3.0/en/views/helpers/time.html
+ * @link https://book.cakephp.org/3/en/views/helpers/time.html
  * @see \Cake\I18n\Time
  */
 class TimeHelper extends Helper
 {
-
     use StringTemplateTrait;
 
     /**
@@ -38,7 +37,7 @@ class TimeHelper extends Helper
      * @var array
      */
     protected $_defaultConfig = [
-        'outputTimezone' => null
+        'outputTimezone' => null,
     ];
 
     /**
@@ -46,8 +45,8 @@ class TimeHelper extends Helper
      *
      * Will use the provided timezone, or default output timezone if defined.
      *
-     * @param null|string|\DateTimeZone $timezone The override timezone if applicable.
-     * @return null|string|\DateTimeZone The chosen timezone or null.
+     * @param \DateTimeZone|string|null $timezone The override timezone if applicable.
+     * @return \DateTimeZone|string|null The chosen timezone or null.
      */
     protected function _getTimezone($timezone)
     {
@@ -258,7 +257,7 @@ class TimeHelper extends Helper
         $element = null;
         $options += [
             'element' => null,
-            'timezone' => null
+            'timezone' => null,
         ];
         $options['timezone'] = $this->_getTimezone($options['timezone']);
         if ($options['timezone']) {
@@ -270,7 +269,7 @@ class TimeHelper extends Helper
             $element = [
                 'tag' => 'span',
                 'class' => 'time-ago-in-words',
-                'title' => $dateTime
+                'title' => $dateTime,
             ];
 
             if (is_array($options['element'])) {
@@ -300,6 +299,7 @@ class TimeHelper extends Helper
      *
      * @param string|int $timeInterval the numeric value with space then time type.
      *    Example of valid types: 6 hours, 2 days, 1 minute.
+     *    Integer input values are deprecated and support will be removed in 4.0.0
      * @param int|string|\DateTime $dateString UNIX timestamp, strtotime() valid string or DateTime object
      * @param string|\DateTimeZone|null $timezone User's timezone string or DateTimeZone object
      * @return bool
@@ -315,6 +315,7 @@ class TimeHelper extends Helper
      *
      * @param string|int $timeInterval the numeric value with space then time type.
      *    Example of valid types: 6 hours, 2 days, 1 minute.
+     *    Integer input values are deprecated and support will be removed in 4.0.0
      * @param int|string|\DateTime $dateString UNIX timestamp, strtotime() valid string or DateTime object
      * @param string|\DateTimeZone|null $timezone User's timezone string or DateTimeZone object
      * @return bool
@@ -363,13 +364,13 @@ class TimeHelper extends Helper
      * @param string|null $format Intl compatible format string.
      * @param bool|string $invalid Default value to display on invalid dates
      * @param string|\DateTimeZone|null $timezone User's timezone string or DateTimeZone object
-     * @return string Formatted and translated date string
+     * @return string|false Formatted and translated date string or value for `$invalid` on failure.
      * @throws \Exception When the date cannot be parsed
      * @see \Cake\I18n\Time::i18nFormat()
      */
     public function i18nFormat($date, $format = null, $invalid = false, $timezone = null)
     {
-        if (!isset($date)) {
+        if ($date === null) {
             return $invalid;
         }
         $timezone = $this->_getTimezone($timezone);

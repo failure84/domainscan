@@ -22,11 +22,10 @@ use ReflectionClass;
  */
 class RulesProvider
 {
-
     /**
      * The class/object to proxy.
      *
-     * @var mixed
+     * @var string|object
      */
     protected $_class;
 
@@ -40,9 +39,10 @@ class RulesProvider
     /**
      * Constructor, sets the default class to use for calling methods
      *
-     * @param string $class the default class to proxy
+     * @param string|object $class the default class to proxy
+     * @throws \ReflectionException
      */
-    public function __construct($class = '\Cake\Validation\Validation')
+    public function __construct($class = Validation::class)
     {
         $this->_class = $class;
         $this->_reflection = new ReflectionClass($class);

@@ -62,6 +62,7 @@ use RuntimeException;
  *
  * Counter cache using lambda function returning the count
  * This is equivalent to example #2
+ *
  * ```
  * [
  *     'Users' => [
@@ -75,6 +76,9 @@ use RuntimeException;
  *     ]
  * ]
  * ```
+ *
+ * When using a lambda function you can return `false` to disable updating the counter value
+ * for the current operation.
  *
  * Ignore updating the field if it is dirty
  * ```
@@ -96,7 +100,6 @@ use RuntimeException;
  */
 class CounterCacheBehavior extends Behavior
 {
-
     /**
      * Store the fields which should be ignored
      *
@@ -121,7 +124,7 @@ class CounterCacheBehavior extends Behavior
         }
 
         foreach ($this->_config as $assoc => $settings) {
-            $assoc = $this->_table->association($assoc);
+            $assoc = $this->_table->getAssociation($assoc);
             foreach ($settings as $field => $config) {
                 if (is_int($field)) {
                     continue;
@@ -130,7 +133,8 @@ class CounterCacheBehavior extends Behavior
                 $registryAlias = $assoc->getTarget()->getRegistryAlias();
                 $entityAlias = $assoc->getProperty();
 
-                if (!is_callable($config) &&
+                if (
+                    !is_callable($config) &&
                     isset($config['ignoreDirty']) &&
                     $config['ignoreDirty'] === true &&
                     $entity->$entityAlias->isDirty($field)
@@ -190,7 +194,7 @@ class CounterCacheBehavior extends Behavior
     protected function _processAssociations(Event $event, EntityInterface $entity)
     {
         foreach ($this->_config as $assoc => $settings) {
-            $assoc = $this->_table->association($assoc);
+            $assoc = $this->_table->getAssociation($assoc);
             $this->_processAssociation($event, $entity, $assoc, $settings);
         }
     }
@@ -223,7 +227,8 @@ class CounterCacheBehavior extends Behavior
                 $config = [];
             }
 
-            if (isset($this->_ignoreDirty[$assoc->getTarget()->getRegistryAlias()][$field]) &&
+            if (
+                isset($this->_ignoreDirty[$assoc->getTarget()->getRegistryAlias()][$field]) &&
                 $this->_ignoreDirty[$assoc->getTarget()->getRegistryAlias()][$field] === true
             ) {
                 continue;
@@ -237,8 +242,9 @@ class CounterCacheBehavior extends Behavior
             } else {
                 $count = $this->_getCount($config, $countConditions);
             }
-
-            $assoc->getTarget()->updateAll([$field => $count], $updateConditions);
+            if ($count !== false) {
+                $assoc->getTarget()->updateAll([$field => $count], $updateConditions);
+            }
 
             if (isset($updateOriginalConditions)) {
                 if (is_callable($config)) {
@@ -249,7 +255,9 @@ class CounterCacheBehavior extends Behavior
                 } else {
                     $count = $this->_getCount($config, $countOriginalConditions);
                 }
-                $assoc->getTarget()->updateAll([$field => $count], $updateOriginalConditions);
+                if ($count !== false) {
+                    $assoc->getTarget()->updateAll([$field => $count], $updateOriginalConditions);
+                }
             }
         }
     }

@@ -21,13 +21,19 @@ use Cake\Datasource\SchemaInterface;
  */
 interface TableSchemaInterface extends SchemaInterface
 {
-
     /**
      * Binary column type
      *
      * @var string
      */
     const TYPE_BINARY = 'binary';
+
+    /**
+     * Binary UUID column type
+     *
+     * @var string
+     */
+    const TYPE_BINARY_UUID = 'binaryuuid';
 
     /**
      * Date column type
@@ -192,7 +198,7 @@ interface TableSchemaInterface extends SchemaInterface
     /**
      * Get the names of all the indexes in the table.
      *
-     * @return array
+     * @return string[]
      */
     public function indexes();
 
@@ -237,7 +243,7 @@ interface TableSchemaInterface extends SchemaInterface
     /**
      * Get the names of all the constraints in the table.
      *
-     * @return array
+     * @return string[]
      */
     public function constraints();
 }

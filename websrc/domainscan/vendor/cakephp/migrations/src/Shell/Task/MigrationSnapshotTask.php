@@ -22,10 +22,12 @@ use Migrations\Util\UtilTrait;
 
 /**
  * Task class for generating migration snapshot files.
+ *
+ * @property \Bake\Shell\Task\BakeTemplateTask $BakeTemplate
+ * @property \Bake\Shell\Task\TestTask $Test
  */
 class MigrationSnapshotTask extends SimpleMigrationTask
 {
-
     use SnapshotTrait;
     use TableFinderTrait;
     use UtilTrait;
@@ -37,8 +39,8 @@ class MigrationSnapshotTask extends SimpleMigrationTask
     {
         $collection = $this->getCollection($this->connection);
         EventManager::instance()->on('Bake.initialize', function (Event $event) use ($collection) {
-            $event->subject->loadHelper('Migrations.Migration', [
-                'collection' => $collection
+            $event->getSubject()->loadHelper('Migrations.Migration', [
+                'collection' => $collection,
             ]);
         });
 
@@ -68,7 +70,7 @@ class MigrationSnapshotTask extends SimpleMigrationTask
         $collection = $this->getCollection($this->connection);
         $options = [
             'require-table' => $this->params['require-table'],
-            'plugin' => $this->plugin
+            'plugin' => $this->plugin,
         ];
         $tables = $this->getTablesToBake($collection, $options);
 
@@ -89,7 +91,7 @@ class MigrationSnapshotTask extends SimpleMigrationTask
             'tables' => $tables,
             'action' => 'create_table',
             'name' => $this->BakeTemplate->viewVars['name'],
-            'autoId' => $autoId
+            'autoId' => $autoId,
         ];
     }
 
@@ -102,7 +104,8 @@ class MigrationSnapshotTask extends SimpleMigrationTask
     public function getCollection($connection)
     {
         $connection = ConnectionManager::get($connection);
-        return $connection->schemaCollection();
+
+        return $connection->getSchemaCollection();
     }
 
     /**
@@ -127,24 +130,24 @@ class MigrationSnapshotTask extends SimpleMigrationTask
     {
         $parser = parent::getOptionParser();
 
-        $parser->description(
+        $parser->setDescription(
             'Bake migration snapshot class.'
         )->addArgument('name', [
             'help' => 'Name of the migration to bake. Can use Plugin.name to bake migration files into plugins.',
-            'required' => true
+            'required' => true,
         ])
         ->addOption('require-table', [
             'boolean' => true,
             'default' => false,
-            'help' => 'If require-table is set to true, check also that the table class exists.'
+            'help' => 'If require-table is set to true, check also that the table class exists.',
         ])->addOption('disable-autoid', [
             'boolean' => true,
             'default' => false,
-            'help' => 'Disable phinx behavior of automatically adding an id field.'
+            'help' => 'Disable phinx behavior of automatically adding an id field.',
         ])
         ->addOption('no-lock', [
             'help' => 'If present, no lock file will be generated after baking',
-            'boolean' => true
+            'boolean' => true,
         ]);
 
         return $parser;

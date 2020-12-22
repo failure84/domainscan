@@ -35,7 +35,6 @@ use RuntimeException;
  */
 class Marshaller
 {
-
     use AssociationsNormalizerTrait;
 
     /**
@@ -88,10 +87,9 @@ class Marshaller
                 $key = $nested;
                 $nested = [];
             }
-            $assoc = $this->_table->association($key);
             // If the key is not a special field like _ids or _joinData
             // it is a missing association that we should error on.
-            if (!$assoc) {
+            if (!$this->_table->hasAssociation($key)) {
                 if (substr($key, 0, 1) !== '_') {
                     throw new \InvalidArgumentException(sprintf(
                         'Cannot marshal data for "%s" association. It is not associated with "%s".',
@@ -101,6 +99,8 @@ class Marshaller
                 }
                 continue;
             }
+            $assoc = $this->_table->getAssociation($key);
+
             if (isset($options['forceNew'])) {
                 $nested['forceNew'] = $options['forceNew'];
             }
@@ -247,12 +247,13 @@ class Marshaller
         } elseif (is_string($options['validate'])) {
             $validator = $this->_table->getValidator($options['validate']);
         } elseif (is_object($options['validate'])) {
+            /** @var \Cake\Validation\Validator $validator */
             $validator = $options['validate'];
         }
 
         if ($validator === null) {
             throw new RuntimeException(
-                sprintf('validate must be a boolean, a string or an object. Got %s.', gettype($options['validate']))
+                sprintf('validate must be a boolean, a string or an object. Got %s.', getTypeName($options['validate']))
             );
         }
 
@@ -271,6 +272,9 @@ class Marshaller
         $options += ['validate' => true];
 
         if (!isset($options['fields']) && isset($options['fieldList'])) {
+            deprecationWarning(
+                'The `fieldList` option for marshalling is deprecated. Use the `fields` option instead.'
+            );
             $options['fields'] = $options['fieldList'];
             unset($options['fieldList']);
         }
@@ -304,7 +308,7 @@ class Marshaller
         $targetTable = $assoc->getTarget();
         $marshaller = $targetTable->marshaller();
         $types = [Association::ONE_TO_ONE, Association::MANY_TO_ONE];
-        if (in_array($assoc->type(), $types)) {
+        if (in_array($assoc->type(), $types, true)) {
             return $marshaller->one($value, (array)$options);
         }
         if ($assoc->type() === Association::ONE_TO_MANY || $assoc->type() === Association::MANY_TO_MANY) {
@@ -414,7 +418,7 @@ class Marshaller
             $query = $target->find();
             $query->andWhere(function ($exp) use ($conditions) {
                 /** @var \Cake\Database\Expression\QueryExpression $exp */
-                return $exp->or_($conditions);
+                return $exp->or($conditions);
             });
 
             $keyFields = array_keys($primaryKey);
@@ -500,6 +504,10 @@ class Marshaller
      */
     protected function _loadBelongsToMany($assoc, $ids)
     {
+        deprecationWarning(
+            'Marshaller::_loadBelongsToMany() is deprecated. Use _loadAssociatedByIds() instead.'
+        );
+
         return $this->_loadAssociatedByIds($assoc, $ids);
     }
 
@@ -561,7 +569,7 @@ class Marshaller
         $errors = $this->_validate($data + $keys, $options, $isNew);
         $options['isMerge'] = true;
         $propertyMap = $this->_buildPropertyMap($data, $options);
-        $properties = $marshalledAssocs = [];
+        $properties = [];
         foreach ($data as $key => $value) {
             if (!empty($errors[$key])) {
                 if ($entity instanceof InvalidPropertyInterface) {
@@ -578,7 +586,8 @@ class Marshaller
                 // change. Arrays will always be marked as dirty because
                 // the original/updated list could contain references to the
                 // same objects, even though those objects may have changed internally.
-                if ((is_scalar($value) && $original === $value) ||
+                if (
+                    (is_scalar($value) && $original === $value) ||
                     ($value === null && $original === $value) ||
                     (is_object($value) && !($value instanceof EntityInterface) && $original == $value)
                 ) {
@@ -682,19 +691,20 @@ class Marshaller
             unset($indexed[$key]);
         }
 
-        $maybeExistentQuery = (new Collection($indexed))
+        $conditions = (new Collection($indexed))
             ->map(function ($data, $key) {
                 return explode(';', $key);
             })
             ->filter(function ($keys) use ($primary) {
                 return count(array_filter($keys, 'strlen')) === count($primary);
             })
-            ->reduce(function ($query, $keys) use ($primary) {
-                /** @var \Cake\ORM\Query $query */
+            ->reduce(function ($conditions, $keys) use ($primary) {
                 $fields = array_map([$this->_table, 'aliasField'], $primary);
+                $conditions['OR'][] = array_combine($fields, $keys);
 
-                return $query->orWhere($query->newExpr()->and_(array_combine($fields, $keys)));
-            }, $this->_table->find());
+                return $conditions;
+            }, ['OR' => []]);
+        $maybeExistentQuery = $this->_table->find()->where($conditions);
 
         if (!empty($indexed) && count($maybeExistentQuery->clause('where'))) {
             foreach ($maybeExistentQuery as $entity) {
@@ -737,11 +747,22 @@ class Marshaller
         $targetTable = $assoc->getTarget();
         $marshaller = $targetTable->marshaller();
         $types = [Association::ONE_TO_ONE, Association::MANY_TO_ONE];
-        if (in_array($assoc->type(), $types)) {
+        if (in_array($assoc->type(), $types, true)) {
             return $marshaller->merge($original, $value, (array)$options);
         }
         if ($assoc->type() === Association::MANY_TO_MANY) {
             return $marshaller->_mergeBelongsToMany($original, $assoc, $value, (array)$options);
+        }
+
+        if ($assoc->type() === Association::ONE_TO_MANY) {
+            $hasIds = array_key_exists('_ids', $value);
+            $onlyIds = array_key_exists('onlyIds', $options) && $options['onlyIds'];
+            if ($hasIds && is_array($value['_ids'])) {
+                return $this->_loadAssociatedByIds($assoc, $value['_ids']);
+            }
+            if ($hasIds || $onlyIds) {
+                return [];
+            }
         }
 
         return $marshaller->mergeMany($original, $value, (array)$options);
@@ -771,7 +792,7 @@ class Marshaller
             return [];
         }
 
-        if (!empty($associated) && !in_array('_joinData', $associated) && !isset($associated['_joinData'])) {
+        if (!empty($associated) && !in_array('_joinData', $associated, true) && !isset($associated['_joinData'])) {
             return $this->mergeMany($original, $value, $options);
         }
 

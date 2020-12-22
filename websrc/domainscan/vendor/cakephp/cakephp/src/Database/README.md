@@ -240,9 +240,6 @@ $query->where(['id >' => 1, 'title' => 'My title']);
 It is possible to generate `OR` conditions as well
 
 ```php
-$query->where(['id >' => 1])->orWhere(['title' => 'My Title']);
-
-// Equivalent to
 $query->where(['OR' => ['id >' => 1, 'title' => 'My title']]);
 ```
 
@@ -273,7 +270,7 @@ Combining expressions is also possible:
 
 ```php
 $query->where(function ($exp) {
-        $orConditions = $exp->or_(['author_id' => 2])
+        $orConditions = $exp->or(['author_id' => 2])
             ->eq('author_id', 5);
         return $exp
             ->not($orConditions)

@@ -16,18 +16,18 @@ namespace Cake\View\Helper;
 
 use Cake\Utility\Xml;
 use Cake\View\Helper;
+use Cake\View\View;
 
 /**
  * RSS Helper class for easy output RSS structures.
  *
  * @property \Cake\View\Helper\UrlHelper $Url
  * @property \Cake\View\Helper\TimeHelper $Time
- * @link https://book.cakephp.org/3.0/en/views/helpers/rss.html
+ * @link https://book.cakephp.org/3/en/views/helpers/rss.html
  * @deprecated 3.5.0 RssHelper is deprecated and will be removed in 4.0.0
  */
 class RssHelper extends Helper
 {
-
     /**
      * Helpers used by RSS Helper
      *
@@ -90,6 +90,15 @@ class RssHelper extends Helper
      * @var string
      */
     public $version = '2.0';
+
+    /**
+     * {@inheritDoc}
+     */
+    public function __construct(View $view, array $settings = [])
+    {
+        deprecationWarning('RssHelper is deprecated and will be removed in 4.0.0');
+        parent::__construct($view, $settings);
+    }
 
     /**
      * Returns an RSS document wrapped in `<rss />` tags

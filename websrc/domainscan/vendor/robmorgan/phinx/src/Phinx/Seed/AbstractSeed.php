@@ -1,35 +1,14 @@
 <?php
+
 /**
- * Phinx
- *
- * (The MIT license)
- * Copyright (c) 2015 Rob Morgan
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated * documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- *
- * @package    Phinx
- * @subpackage Phinx\Seed
+ * MIT License
+ * For full license information, please view the LICENSE file that was distributed with this source code.
  */
+
 namespace Phinx\Seed;
 
-use Phinx\Db\Table;
 use Phinx\Db\Adapter\AdapterInterface;
+use Phinx\Db\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -46,32 +25,30 @@ use Symfony\Component\Console\Output\OutputInterface;
 abstract class AbstractSeed implements SeedInterface
 {
     /**
-     * @var AdapterInterface
+     * @var \Phinx\Db\Adapter\AdapterInterface
      */
     protected $adapter;
 
     /**
-     * @var InputInterface
+     * @var \Symfony\Component\Console\Input\InputInterface
      */
     protected $input;
 
     /**
-     * @var OutputInterface
+     * @var \Symfony\Component\Console\Output\OutputInterface
      */
     protected $output;
 
     /**
-     * Class Constructor.
-     *
-     * @param InputInterface $input
-     * @param OutputInterface $output
+     * @param \Symfony\Component\Console\Input\InputInterface|null $input
+     * @param \Symfony\Component\Console\Output\OutputInterface|null $output
      */
     final public function __construct(InputInterface $input = null, OutputInterface $output = null)
     {
-        if (!is_null($input)){
+        if ($input !== null) {
             $this->setInput($input);
         }
-        if (!is_null($output)){
+        if ($output !== null) {
             $this->setOutput($output);
         }
 
@@ -88,23 +65,34 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function run()
     {
     }
 
     /**
-     * {@inheritdoc}
+     * Return seeds dependencies.
+     *
+     * @return array
+     */
+    public function getDependencies()
+    {
+        return [];
+    }
+
+    /**
+     * @inheritDoc
      */
     public function setAdapter(AdapterInterface $adapter)
     {
         $this->adapter = $adapter;
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getAdapter()
     {
@@ -112,16 +100,17 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function setInput(InputInterface $input)
     {
         $this->input = $input;
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getInput()
     {
@@ -129,16 +118,17 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function setOutput(OutputInterface $output)
     {
         $this->output = $output;
+
         return $this;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getOutput()
     {
@@ -146,15 +136,15 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getName()
     {
-        return get_class($this);
+        return static::class;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function execute($sql)
     {
@@ -162,7 +152,7 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function query($sql)
     {
@@ -170,7 +160,7 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function fetchRow($sql)
     {
@@ -178,7 +168,7 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function fetchAll($sql)
     {
@@ -186,19 +176,19 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function insert($table, $data)
     {
         // convert to table object
         if (is_string($table)) {
-            $table = new Table($table, array(), $this->getAdapter());
+            $table = new Table($table, [], $this->getAdapter());
         }
         $table->insert($data)->save();
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function hasTable($tableName)
     {
@@ -206,9 +196,9 @@ abstract class AbstractSeed implements SeedInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    public function table($tableName, $options = array())
+    public function table($tableName, $options = [])
     {
         return new Table($tableName, $options, $this->getAdapter());
     }

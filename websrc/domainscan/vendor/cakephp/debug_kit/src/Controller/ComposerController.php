@@ -13,10 +13,6 @@
  */
 namespace DebugKit\Controller;
 
-use Cake\Controller\Controller;
-use Cake\Core\Configure;
-use Cake\Event\Event;
-use Cake\Network\Exception\NotFoundException;
 use Cake\View\JsonView;
 use Composer\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -25,9 +21,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * Provides utility features need by the toolbar.
  */
-class ComposerController extends Controller
+class ComposerController extends DebugKitController
 {
-
     /**
      * {@inheritDoc}
      */
@@ -35,21 +30,7 @@ class ComposerController extends Controller
     {
         parent::initialize();
         $this->loadComponent('RequestHandler');
-        $this->viewBuilder()->className(JsonView::class);
-    }
-
-    /**
-     * Before filter handler.
-     *
-     * @param \Cake\Event\Event $event The event.
-     * @return void
-     * @throws \Cake\Network\Exception\NotFoundException
-     */
-    public function beforeFilter(Event $event)
-    {
-        if (!Configure::read('debug')) {
-            throw new NotFoundException();
-        }
+        $this->viewBuilder()->setClassName(JsonView::class);
     }
 
     /**
@@ -65,7 +46,7 @@ class ComposerController extends Controller
         $input = new ArrayInput([
             'command' => 'outdated',
             '--no-interaction' => true,
-            '--direct' => (bool)$this->request->data('direct'),
+            '--direct' => filter_var($this->request->getData('direct'), FILTER_VALIDATE_BOOLEAN),
         ]);
 
         $output = $this->executeComposerCommand($input);
@@ -73,7 +54,7 @@ class ComposerController extends Controller
         $packages = [];
         foreach ($dependencies as $dependency) {
             if (strpos($dependency, 'php_network_getaddresses') !== false) {
-                throw new \RuntimeException('You have to be connected to the internet');
+                throw new \RuntimeException(__d('debug_kit', 'You have to be connected to the internet'));
             }
             if (strpos($dependency, '<highlight>') !== false) {
                 $packages['semverCompatible'][] = $dependency;
