@@ -7,23 +7,23 @@ use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
 /**
- * DomainsRecords Model
+ * Domains-records Model
  *
  * @property \App\Model\Table\DomainsTable&\Cake\ORM\Association\BelongsTo $Domains
  * @property \App\Model\Table\VendorsTable&\Cake\ORM\Association\BelongsTo $Vendors
  *
- * @method \App\Model\Entity\DomainsRecord get($primaryKey, $options = [])
- * @method \App\Model\Entity\DomainsRecord newEntity($data = null, array $options = [])
- * @method \App\Model\Entity\DomainsRecord[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\DomainsRecord|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\DomainsRecord saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\DomainsRecord patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method \App\Model\Entity\DomainsRecord[] patchEntities($entities, array $data, array $options = [])
- * @method \App\Model\Entity\DomainsRecord findOrCreate($search, callable $callback = null, $options = [])
+ * @method \App\Model\Entity\Domains-record get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Domains-record newEntity($data = null, array $options = [])
+ * @method \App\Model\Entity\Domains-record[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Domains-record|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Domains-record saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Domains-record patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Domains-record[] patchEntities($entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Domains-record findOrCreate($search, callable $callback = null, $options = [])
  *
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
-class DomainsRecordsTable extends Table
+class Domains-recordsTable extends Table
 {
     /**
      * Initialize method

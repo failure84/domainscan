@@ -10,6 +10,12 @@ use Cake\TestSuite\TestCase;
  */
 class DomainsTableTest extends TestCase
 {
+    /**
+     * Test subject
+     *
+     * @var \App\Model\Table\DomainsTable
+     */
+    public $Domains;
 
     /**
      * Fixtures
@@ -17,8 +23,9 @@ class DomainsTableTest extends TestCase
      * @var array
      */
     public $fixtures = [
-        'app.domains',
-        'app.records'
+        'app.Domains',
+        'app.DomainsRecords',
+        'app.Vendors',
     ];
 
     /**
@@ -29,8 +36,8 @@ class DomainsTableTest extends TestCase
     public function setUp()
     {
         parent::setUp();
-        $config = TableRegistry::exists('Domains') ? [] : ['className' => 'App\Model\Table\DomainsTable'];
-        $this->Domains = TableRegistry::get('Domains', $config);
+        $config = TableRegistry::getTableLocator()->exists('Domains') ? [] : ['className' => DomainsTable::class];
+        $this->Domains = TableRegistry::getTableLocator()->get('Domains', $config);
     }
 
     /**

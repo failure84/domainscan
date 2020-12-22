@@ -210,3 +210,7 @@ Plugin::load('Sphinx');
 
 Plugin::load('DebugKit', ['bootstrap' => true]);
 
+
+Plugin::load('BootstrapUI');
+
+Plugin::load('DebugKit');

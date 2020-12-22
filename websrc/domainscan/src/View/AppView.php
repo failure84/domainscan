@@ -22,7 +22,11 @@ use Cake\View\View;
  *
  * @link http://book.cakephp.org/3.0/en/views.html#the-app-view
  */
-class AppView extends View
+
+use BootstrapUI\View\UIView;
+
+
+class AppView extends UIView
 {
 
     /**
@@ -36,5 +40,6 @@ class AppView extends View
      */
     public function initialize()
     {
+        parent::initialize();
     }
 }

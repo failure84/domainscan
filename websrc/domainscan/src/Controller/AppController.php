@@ -50,18 +50,20 @@ class AppController extends Controller
                 'action' => 'index'
             ],
             'logoutRedirect' => [
-                'controller' => 'Pages',
-                'action' => 'display',
+                'controller' => 'Domains',
+                'action' => 'index',
                 'home'
             ]
         ]);
-	// Changed by mrboat, set swedish time format
-	Time::setDefaultLocale('sv-SE');
+        $this->set('authUser', $this->Auth->user('user_id'));
+
+        // Changed by mrboat, set swedish time format
+        Time::setDefaultLocale('sv-SE');
     }
 
     public function beforeFilter(Event $event)
     {
-        $this->Auth->allow(['index', 'view', 'display']);
+        $this->Auth->allow(['index', 'getindex', 'view', 'display']);
     }
 
     /**

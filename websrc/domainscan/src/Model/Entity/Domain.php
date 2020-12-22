@@ -4,17 +4,22 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * Domain Entity.
+ * Domain Entity
  *
  * @property int $id
  * @property string $name
+ * @property int $errors
+ * @property \Cake\I18n\Time|null $new_mx
+ * @property int $vendor_id
+ * @property string $note
  * @property \Cake\I18n\Time $created
  * @property \Cake\I18n\Time $modified
- * @property \App\Model\Entity\Record[] $records
+ *
+ * @property \App\Model\Entity\DomainsRecord[] $domains_records
+ * @property \App\Model\Entity\Vendor $vendor
  */
 class Domain extends Entity
 {
-
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -25,7 +30,14 @@ class Domain extends Entity
      * @var array
      */
     protected $_accessible = [
-        '*' => true,
-        'id' => false,
+        'name' => true,
+        'errors' => true,
+        'new_mx' => true,
+        'vendor_id' => true,
+        'note' => true,
+        'created' => true,
+        'modified' => true,
+        'domains_records' => true,
+        'vendor' => true,
     ];
 }

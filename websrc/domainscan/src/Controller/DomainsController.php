@@ -7,144 +7,111 @@ use App\Controller\AppController;
  * Domains Controller
  *
  * @property \App\Model\Table\DomainsTable $Domains
+ *
+ * @method \App\Model\Entity\Domain[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
  */
 class DomainsController extends AppController
 {
-	public $paginate = [
-	// Other keys here.
-	'limit' => 50,
-	'order' => [
-            'new_mx' => 'DESC'
-	],
-	];
+    /**
+     * Index method
+     *
+     * @return \Cake\Http\Response|null
+     */
+    public function index()
+    {
+    }
 
     /**
      * Index method
      *
-     * @return void
+     * @return \Cake\Http\Response|null
      */
-    public function index($search = null)
+    public function getindex()
     {
-	$search = $this->request->query('search');
-	$vendors_id = $this->request->query('vendors_id');
+        $this->request->allowMethod('ajax');
+        $this->paginate = [
+            'contain' => ['Vendors'],
+            'order' => [ 'new_mx' => 'desc' ]
+        ];
 
+        if ($this->request->getQuery('q') !== null) {
+            $domains = $this->Domains->find('search', ['search' => $this->request->getQueryParams()]);
+        }
+        else {
+            $domains = $this->Domains->find();
+        }
 
-
-	if (!$vendors_id) {
-		$vendors_search = array();
-	} else {
-		$vendors_search = [ 'vendor_id' => $vendors_id ];
-	}
-
-	if(!$search){
-		$query = $this->Domains->find(); 
-	} else {
-		$query = $this->Domains->search(['index' => 'domains1', 
-					    'term' => $search, 
-					    'match_fields' => 'name', 
-					    'limit' => '50'
-		]);
-	}
-
-
-	$query->where([$vendors_search]);
-	$query->contain([
-		'Vendors' => function ($q) {
-			return $q
-			->select(['id', 'name']);
-    	}]);
-	$query->select(['id', 'name', 'new_mx']);
-	$this->set('search', $search);
-	$this->set('vendors_id', $vendors_id);
-	$vendors = $this->Domains->Vendors->find('list', array(
-						'fields'=>array('id','name')));
-	$this->set('vendors', $vendors);
-	$this->set('_serialize', ['domains']);
-	if ($query->count() > 0) {
-		$this->Flash->success("Found " . $query->count() . " Domains");
-	} else {
-		$this->Flash->error("$search Not Found");
-	}
-
-	if($this->request->query){
-		$this->set('domains', $this->paginate($query));
-	}
+        $this->set('domains', $this->paginate($domains));
     }
 
     /**
      * View method
      *
      * @param string|null $id Domain id.
-     * @return void
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     * @return \Cake\Http\Response|null
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
     public function view($id = null)
     {
         $domain = $this->Domains->get($id, [
-            'contain' => [
-		'DomainsRecords' => [
-			'queryBuilder' => function ($q) {
-					return $q->order(['DomainsRecords.modified' => 'DESC']); 
-				    },
-			'Vendors']
-		]
+            'contain' => ['Vendors', 'DomainsRecords'],
         ]);
+
         $this->set('domain', $domain);
-        $this->set('_serialize', ['domain']);
     }
 
     /**
      * Add method
      *
-     * @return void Redirects on successful add, renders view otherwise.
+     * @return \Cake\Http\Response|null Redirects on successful add, renders view otherwise.
      */
     public function add()
     {
         $domain = $this->Domains->newEntity();
         if ($this->request->is('post')) {
-            $domain = $this->Domains->patchEntity($domain, $this->request->data);
+            $domain = $this->Domains->patchEntity($domain, $this->request->getData());
             if ($this->Domains->save($domain)) {
                 $this->Flash->success(__('The domain has been saved.'));
+
                 return $this->redirect(['action' => 'index']);
-            } else {
-                $this->Flash->error(__('The domain could not be saved. Please, try again.'));
             }
+            $this->Flash->error(__('The domain could not be saved. Please, try again.'));
         }
-        $this->set(compact('domain'));
-        $this->set('_serialize', ['domain']);
+        $vendors = $this->Domains->Vendors->find('list', ['limit' => 200]);
+        $this->set(compact('domain', 'vendors'));
     }
 
     /**
      * Edit method
      *
      * @param string|null $id Domain id.
-     * @return void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     * @return \Cake\Http\Response|null Redirects on successful edit, renders view otherwise.
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
     public function edit($id = null)
     {
         $domain = $this->Domains->get($id, [
-            'contain' => []
+            'contain' => [],
         ]);
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $domain = $this->Domains->patchEntity($domain, $this->request->data);
+            $domain = $this->Domains->patchEntity($domain, $this->request->getData());
             if ($this->Domains->save($domain)) {
                 $this->Flash->success(__('The domain has been saved.'));
+
                 return $this->redirect(['action' => 'index']);
-            } else {
-                $this->Flash->error(__('The domain could not be saved. Please, try again.'));
             }
+            $this->Flash->error(__('The domain could not be saved. Please, try again.'));
         }
-        $this->set(compact('domain'));
-        $this->set('_serialize', ['domain']);
+        $vendors = $this->Domains->Vendors->find('list', ['limit' => 200]);
+        $this->set(compact('domain', 'vendors'));
     }
 
     /**
      * Delete method
      *
      * @param string|null $id Domain id.
-     * @return \Cake\Network\Response|null Redirects to index.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     * @return \Cake\Http\Response|null Redirects to index.
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
     public function delete($id = null)
     {
@@ -155,6 +122,7 @@ class DomainsController extends AppController
         } else {
             $this->Flash->error(__('The domain could not be deleted. Please, try again.'));
         }
+
         return $this->redirect(['action' => 'index']);
     }
 }

@@ -4,18 +4,18 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * VendorsMx Entity.
+ * VendorsMx Entity
  *
  * @property int $id
  * @property int $vendor_id
+ * @property string|null $value
+ * @property \Cake\I18n\Time|null $created
+ * @property \Cake\I18n\Time|null $modified
+ *
  * @property \App\Model\Entity\Vendor $vendor
- * @property string $value
- * @property \Cake\I18n\Time $created
- * @property \Cake\I18n\Time $modified
  */
 class VendorsMx extends Entity
 {
-
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -26,7 +26,10 @@ class VendorsMx extends Entity
      * @var array
      */
     protected $_accessible = [
-        '*' => true,
-        'id' => false,
+        'vendor_id' => true,
+        'value' => true,
+        'created' => true,
+        'modified' => true,
+        'vendor' => true,
     ];
 }

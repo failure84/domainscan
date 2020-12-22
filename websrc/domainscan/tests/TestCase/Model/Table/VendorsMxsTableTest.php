@@ -10,6 +10,12 @@ use Cake\TestSuite\TestCase;
  */
 class VendorsMxsTableTest extends TestCase
 {
+    /**
+     * Test subject
+     *
+     * @var \App\Model\Table\VendorsMxsTable
+     */
+    public $VendorsMxs;
 
     /**
      * Fixtures
@@ -17,8 +23,8 @@ class VendorsMxsTableTest extends TestCase
      * @var array
      */
     public $fixtures = [
-        'app.vendors_mxs',
-        'app.vendors'
+        'app.VendorsMxs',
+        'app.Vendors',
     ];
 
     /**
@@ -29,8 +35,8 @@ class VendorsMxsTableTest extends TestCase
     public function setUp()
     {
         parent::setUp();
-        $config = TableRegistry::exists('VendorsMxs') ? [] : ['className' => 'App\Model\Table\VendorsMxsTable'];
-        $this->VendorsMxs = TableRegistry::get('VendorsMxs', $config);
+        $config = TableRegistry::getTableLocator()->exists('VendorsMxs') ? [] : ['className' => VendorsMxsTable::class];
+        $this->VendorsMxs = TableRegistry::getTableLocator()->get('VendorsMxs', $config);
     }
 
     /**

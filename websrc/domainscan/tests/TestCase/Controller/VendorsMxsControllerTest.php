@@ -2,13 +2,17 @@
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\VendorsMxsController;
-use Cake\TestSuite\IntegrationTestCase;
+use Cake\TestSuite\IntegrationTestTrait;
+use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\VendorsMxsController Test Case
+ *
+ * @uses \App\Controller\VendorsMxsController
  */
-class VendorsMxsControllerTest extends IntegrationTestCase
+class VendorsMxsControllerTest extends TestCase
 {
+    use IntegrationTestTrait;
 
     /**
      * Fixtures
@@ -16,8 +20,8 @@ class VendorsMxsControllerTest extends IntegrationTestCase
      * @var array
      */
     public $fixtures = [
-        'app.vendors_mxs',
-        'app.vendors'
+        'app.VendorsMxs',
+        'app.Vendors',
     ];
 
     /**

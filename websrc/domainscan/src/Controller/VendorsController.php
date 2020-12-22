@@ -2,124 +2,97 @@
 namespace App\Controller;
 
 use App\Controller\AppController;
-use Cake\Cache\Cache;
 
 /**
  * Vendors Controller
  *
  * @property \App\Model\Table\VendorsTable $Vendors
+ *
+ * @method \App\Model\Entity\Vendor[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
  */
 class VendorsController extends AppController
 {
-
     /**
      * Index method
      *
-     * @return void
+     * @return \Cake\Http\Response|null
      */
     public function index()
     {
-    $this->paginate = [
-	'sortWhitelist' => [
-		'id',
-		'name',
-		'created',
-		'modified',
-		'total_domains',
-	],
-	'limit' => '50',
-	'order' => [
-		'total_domains' => 'DESC'
-	]
-    ];
+        $vendors = $this->paginate($this->Vendors);
 
-	$query = $this->Vendors->find(); 
-	$query->select(['Vendors.id', 'Vendors.name', 'Vendors.created', 'Vendors.modified', 'total_domains' => $query->func()->count('Domains.id')])
-        ->matching('Domains')
-        ->group(['Domains.vendor_id']);
-
-        $this->set('vendors', $this->Paginate($query));
-        $this->set('_serialize', ['vendors']);
+        $this->set(compact('vendors'));
     }
 
     /**
      * View method
      *
      * @param string|null $id Vendor id.
-     * @return void
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     * @return \Cake\Http\Response|null
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
     public function view($id = null)
     {
         $vendor = $this->Vendors->get($id, [
-            'contain' => ['VendorsMxs', 'Users', 'Stats' => [
-				'sort' => ['Stats.date' => 'DESC']
-			]
-		]
+            'contain' => ['VendorsMxs', 'Users', 'Stats'],
         ]);
 
-	$domains = $this->Vendors->Domains->find()->where(['vendor_id' => $id]);
-	
-	$this->set('domains', $this->Paginate($domains));
-        $this->set('vendor', $vendor);
-        $this->set('_serialize', ['vendor']);
+        $domains = $this->Vendors->Domains->find()->where(['Domains.vendor_id' => $vendor->id]);
 
-	$domains_count = $this->Vendors->Domains->find()->where(['Domains.vendor_id' => $id])->count();
-	$this->set('domains_count', $domains_count);
+        $this->set('domains', $this->Paginate($domains));
+        $this->set('vendor', $vendor);
     }
 
     /**
      * Add method
      *
-     * @return void Redirects on successful add, renders view otherwise.
+     * @return \Cake\Http\Response|null Redirects on successful add, renders view otherwise.
      */
     public function add()
     {
         $vendor = $this->Vendors->newEntity();
         if ($this->request->is('post')) {
-            $vendor = $this->Vendors->patchEntity($vendor, $this->request->data);
+            $vendor = $this->Vendors->patchEntity($vendor, $this->request->getData());
             if ($this->Vendors->save($vendor)) {
                 $this->Flash->success(__('The vendor has been saved.'));
+
                 return $this->redirect(['action' => 'index']);
-            } else {
-                $this->Flash->error(__('The vendor could not be saved. Please, try again.'));
             }
+            $this->Flash->error(__('The vendor could not be saved. Please, try again.'));
         }
         $this->set(compact('vendor'));
-        $this->set('_serialize', ['vendor']);
     }
 
     /**
      * Edit method
      *
      * @param string|null $id Vendor id.
-     * @return void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     * @return \Cake\Http\Response|null Redirects on successful edit, renders view otherwise.
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
     public function edit($id = null)
     {
         $vendor = $this->Vendors->get($id, [
-            'contain' => []
+            'contain' => [],
         ]);
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $vendor = $this->Vendors->patchEntity($vendor, $this->request->data);
+            $vendor = $this->Vendors->patchEntity($vendor, $this->request->getData());
             if ($this->Vendors->save($vendor)) {
                 $this->Flash->success(__('The vendor has been saved.'));
+
                 return $this->redirect(['action' => 'index']);
-            } else {
-                $this->Flash->error(__('The vendor could not be saved. Please, try again.'));
             }
+            $this->Flash->error(__('The vendor could not be saved. Please, try again.'));
         }
         $this->set(compact('vendor'));
-        $this->set('_serialize', ['vendor']);
     }
 
     /**
      * Delete method
      *
      * @param string|null $id Vendor id.
-     * @return \Cake\Network\Response|null Redirects to index.
-     * @throws \Cake\Network\Exception\NotFoundException When record not found.
+     * @return \Cake\Http\Response|null Redirects to index.
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
     public function delete($id = null)
     {
@@ -130,6 +103,7 @@ class VendorsController extends AppController
         } else {
             $this->Flash->error(__('The vendor could not be deleted. Please, try again.'));
         }
+
         return $this->redirect(['action' => 'index']);
     }
 }

@@ -2,13 +2,17 @@
 namespace App\Test\TestCase\Controller;
 
 use App\Controller\DomainsController;
-use Cake\TestSuite\IntegrationTestCase;
+use Cake\TestSuite\IntegrationTestTrait;
+use Cake\TestSuite\TestCase;
 
 /**
  * App\Controller\DomainsController Test Case
+ *
+ * @uses \App\Controller\DomainsController
  */
-class DomainsControllerTest extends IntegrationTestCase
+class DomainsControllerTest extends TestCase
 {
+    use IntegrationTestTrait;
 
     /**
      * Fixtures
@@ -16,7 +20,9 @@ class DomainsControllerTest extends IntegrationTestCase
      * @var array
      */
     public $fixtures = [
-        'app.domains'
+        'app.Domains',
+        'app.DomainsRecords',
+        'app.Vendors',
     ];
 
     /**

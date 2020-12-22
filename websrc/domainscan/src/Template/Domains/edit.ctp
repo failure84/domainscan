@@ -1,24 +1,25 @@
-<nav class="large-3 medium-4 columns" id="actions-sidebar">
-    <ul class="side-nav">
-        <li class="heading"><?= __('Actions') ?></li>
-        <li><?= $this->Form->postLink(
-                __('Delete'),
-                ['action' => 'delete', $domain->id],
-                ['confirm' => __('Are you sure you want to delete # {0}?', $domain->id)]
-            )
-        ?></li>
-        <li><?= $this->Html->link(__('List Domains'), ['action' => 'index']) ?></li>
-        <li><?= $this->Html->link(__('List Domains Records'), ['controller' => 'DomainsRecords', 'action' => 'index']) ?></li>
-        <li><?= $this->Html->link(__('New Domains Record'), ['controller' => 'DomainsRecords', 'action' => 'add']) ?></li>
-    </ul>
-</nav>
-<div class="domains form large-9 medium-8 columns content">
+<?php $this->extend('../Layout/TwitterBootstrap/dashboard'); ?>
+
+<?php $this->start('tb_actions'); ?>
+<li><?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $domain->id], ['confirm' => __('Are you sure you want to delete # {0}?', $domain->id), 'class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('List Domains'), ['action' => 'index'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('List Vendors'), ['controller' => 'Vendors', 'action' => 'index'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('New Vendor'), ['controller' => 'Vendors', 'action' => 'add'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('List Domains Records'), ['controller' => 'DomainsRecords', 'action' => 'index'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('New Domains Record'), ['controller' => 'DomainsRecords', 'action' => 'add'], ['class' => 'nav-link']) ?></li>
+<?php $this->end(); ?>
+<?php $this->assign('tb_sidebar', '<ul class="nav flex-column">' . $this->fetch('tb_actions') . '</ul>'); ?>
+
+<div class="domains form content">
     <?= $this->Form->create($domain) ?>
     <fieldset>
         <legend><?= __('Edit Domain') ?></legend>
         <?php
-            echo $this->Form->input('name');
-            echo $this->Form->input('note');
+            echo $this->Form->control('name');
+            echo $this->Form->control('errors');
+            echo $this->Form->control('new_mx', ['empty' => true]);
+            echo $this->Form->control('vendor_id', ['options' => $vendors]);
+            echo $this->Form->control('note');
         ?>
     </fieldset>
     <?= $this->Form->button(__('Submit')) ?>

@@ -1,7 +1,6 @@
 <?php
 namespace App\Model\Table;
 
-use App\Model\Entity\Vendor;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
@@ -10,10 +9,25 @@ use Cake\Validation\Validator;
 /**
  * Vendors Model
  *
+ * @property \App\Model\Table\DomainsTable&\Cake\ORM\Association\HasMany $Domains
+ * @property &\Cake\ORM\Association\HasMany $DomainsRecords
+ * @property \App\Model\Table\StatsTable&\Cake\ORM\Association\HasMany $Stats
+ * @property \App\Model\Table\UsersTable&\Cake\ORM\Association\HasMany $Users
+ * @property \App\Model\Table\VendorsMxsTable&\Cake\ORM\Association\HasMany $VendorsMxs
+ *
+ * @method \App\Model\Entity\Vendor get($primaryKey, $options = [])
+ * @method \App\Model\Entity\Vendor newEntity($data = null, array $options = [])
+ * @method \App\Model\Entity\Vendor[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\Vendor|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Vendor saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Vendor patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Vendor[] patchEntities($entities, array $data, array $options = [])
+ * @method \App\Model\Entity\Vendor findOrCreate($search, callable $callback = null, $options = [])
+ *
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class VendorsTable extends Table
 {
-
     /**
      * Initialize method
      *
@@ -24,36 +38,27 @@ class VendorsTable extends Table
     {
         parent::initialize($config);
 
-        $this->table('vendors');
-        $this->displayField('name');
-        $this->primaryKey('id');
+        $this->setTable('vendors');
+        $this->setDisplayField('name');
+        $this->setPrimaryKey('id');
 
         $this->addBehavior('Timestamp');
 
-        $this->hasMany('VendorsMxs', [
-            'foreignKey' => 'vendor_id',
-            'dependent' => true,
-        ]);
-#        $this->hasMany('DomainsRecords', [
-#            'foreignKey' => 'vendor_id',
-#            'dependent' => true,
-#        ]);
         $this->hasMany('Domains', [
             'foreignKey' => 'vendor_id',
-            'dependent' => true,
         ]);
-
-        $this->hasMany('Users', [
+        $this->hasMany('DomainsRecords', [
             'foreignKey' => 'vendor_id',
-            'dependent' => true,
         ]);
-
         $this->hasMany('Stats', [
             'foreignKey' => 'vendor_id',
-            'dependent' => true,
         ]);
-
-
+        $this->hasMany('Users', [
+            'foreignKey' => 'vendor_id',
+        ]);
+        $this->hasMany('VendorsMxs', [
+            'foreignKey' => 'vendor_id',
+        ]);
     }
 
     /**
@@ -65,11 +70,18 @@ class VendorsTable extends Table
     public function validationDefault(Validator $validator)
     {
         $validator
-            ->add('id', 'valid', ['rule' => 'numeric'])
-            ->allowEmpty('id', 'create');
+            ->integer('id')
+            ->allowEmptyString('id', null, 'create');
 
         $validator
-            ->allowEmpty('name');
+            ->scalar('name')
+            ->maxLength('name', 255)
+            ->allowEmptyString('name');
+
+        $validator
+            ->scalar('comment')
+            ->requirePresence('comment', 'create')
+            ->notEmptyString('comment');
 
         return $validator;
     }

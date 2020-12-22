@@ -1,7 +1,9 @@
+#options(internet.info = 0)
+#install.packages("anytime")
 library(Rcpp)
 library(anytime)
 library(ggplot2)
-csvData <- read.csv("../tmp/r.data")
+csvData <- read.csv("tmp/r.data")
 data <- as.data.frame(csvData)
 #print(data)
 names(data)[1]="vendor"

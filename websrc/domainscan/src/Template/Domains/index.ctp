@@ -1,54 +1,43 @@
-<nav class="large-3 medium-4 columns" id="actions-sidebar">
-    <ul class="side-nav">
-        <li class="heading"><?= __('Actions') ?></li>
-        <li><?= $this->Html->link(__('New Domain'), ['action' => 'add']) ?></li>
-	<li><?= $this->Html->link(__('List Vendors'), ['controller' => 'Vendors', 'action' => 'index']) ?></li>
-    </ul>
-</nav>
-<div class="domains form large-9 medium-8 columns content">
-    <?= $this->Form->create(null, [ 'type' => 'get' ]) ?>
-    <fieldset>
-        <legend><?= __('Search Domain') ?></legend>
-        <?php
-            echo $this->Form->input('search', array('label' => 'Search Domain (Full-Text Search, SphinxSearch)', 'value' => $search));
-	    echo $this->Form->input('vendors_id', array('default' => $vendors_id, 'empty' => 'ALL'));
-        ?>
-    </fieldset>
-    <?= $this->Form->button(__('Search')) ?>
-    <?= $this->Form->end() ?>
+<script type="text/javascript">
+    $.ajax({
+        method: 'get',
+        url: "<?= $this->Url->build(['controller' => 'domains', 'action' => 'getindex', 'q' => $this->request->getQuery('q')]) ?>",
+        success: function(response) {
+            console.log('got domains');
+            $('.loading').hide();
+            $('.getindex').html(response);
+            $('.getindex').show();
+        }
+    })
+
+    $(document).on('click', '.getindex th a', function(e) {
+        e.preventDefault();
+        console.log('click');
+        $('.getindex').hide();
+        $('.loading').show();
+
+        var target = $(this).attr('href');
+
+        $.get(target, function(data) {
+            $('.getindex').html(data);
+            $('.loading').hide();
+            $('.getindex').show();
+        }, 'html')
+    });
+    
+</script>
+<?php $this->extend('../Layout/TwitterBootstrap/dashboard'); ?>
+<?php $this->start('tb_actions'); ?>
+<li><?= $this->Html->link(__('New Domain'), ['action' => 'add'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('List Vendors'), ['controller' => 'Vendors', 'action' => 'index'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('New Vendor'), ['controller' => 'Vendors', 'action' => 'add'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('List Domains Records'), ['controller' => 'DomainsRecords', 'action' => 'index'], ['class' => 'nav-link']) ?></li>
+<li><?= $this->Html->link(__('New Domains Record'), ['controller' => 'DomainsRecords', 'action' => 'add'], ['class' => 'nav-link']) ?></li>
+<?php $this->end(); ?>
+<?php $this->assign('tb_sidebar', '<ul class="nav flex-column">' . $this->fetch('tb_actions') . '</ul>'); ?>
+
+<div class="spinner-border loading" role="status">
+  <span class="sr-only">Loading...</span>
 </div>
-<?php if (isset($domains)) { ?>
-<div class="domains index large-9 medium-8 columns content">
-    <h3><?= __('Domains') ?></h3>
-    <table cellpadding="0" cellspacing="0">
-        <thead>
-            <tr>
-                <th><?= $this->Paginator->sort('name') ?></th>
-                <th><?= $this->Paginator->sort('vendor_id', 'Vendors Name') ?></th>
-                <th><?= $this->Paginator->sort('new_mx') ?></th>
-                <th class="actions"><?= __('Actions') ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($domains as $domain): ?>
-            <tr>
-                <td><?= h($domain->name) ?></td>
-                <td><?= h($domain->vendor->name) ?></td>
-                <td><?= h($domain->new_mx) ?></td>
-                <td class="actions">
-                    <?= $this->Html->link(__('View'), ['action' => 'view', $domain->id]) ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-    <div class="paginator">
-        <ul class="pagination">
-            <?= $this->Paginator->prev('< ' . __('previous')) ?>
-            <?= $this->Paginator->numbers() ?>
-            <?= $this->Paginator->next(__('next') . ' >') ?>
-        </ul>
-        <p><?= $this->Paginator->counter() ?></p>
-    </div>
+<div class="getindex">
 </div>
-<?php } ?>

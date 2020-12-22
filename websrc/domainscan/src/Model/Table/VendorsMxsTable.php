@@ -1,7 +1,6 @@
 <?php
 namespace App\Model\Table;
 
-use App\Model\Entity\VendorsMx;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
@@ -10,11 +9,21 @@ use Cake\Validation\Validator;
 /**
  * VendorsMxs Model
  *
- * @property \Cake\ORM\Association\BelongsTo $Vendors
+ * @property \App\Model\Table\VendorsTable&\Cake\ORM\Association\BelongsTo $Vendors
+ *
+ * @method \App\Model\Entity\VendorsMx get($primaryKey, $options = [])
+ * @method \App\Model\Entity\VendorsMx newEntity($data = null, array $options = [])
+ * @method \App\Model\Entity\VendorsMx[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\VendorsMx|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\VendorsMx saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\VendorsMx patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\VendorsMx[] patchEntities($entities, array $data, array $options = [])
+ * @method \App\Model\Entity\VendorsMx findOrCreate($search, callable $callback = null, $options = [])
+ *
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class VendorsMxsTable extends Table
 {
-
     /**
      * Initialize method
      *
@@ -25,17 +34,16 @@ class VendorsMxsTable extends Table
     {
         parent::initialize($config);
 
-        $this->table('vendors_mxs');
-        $this->displayField('id');
-        $this->primaryKey('id');
+        $this->setTable('vendors_mxs');
+        $this->setDisplayField('id');
+        $this->setPrimaryKey('id');
 
         $this->addBehavior('Timestamp');
 
         $this->belongsTo('Vendors', [
             'foreignKey' => 'vendor_id',
-            'joinType' => 'INNER'
+            'joinType' => 'INNER',
         ]);
-
     }
 
     /**
@@ -47,11 +55,14 @@ class VendorsMxsTable extends Table
     public function validationDefault(Validator $validator)
     {
         $validator
-            ->add('id', 'valid', ['rule' => 'numeric'])
-            ->allowEmpty('id', 'create');
+            ->integer('id')
+            ->allowEmptyString('id', null, 'create');
 
         $validator
-            ->allowEmpty('value');
+            ->scalar('value')
+            ->maxLength('value', 255)
+            ->allowEmptyString('value')
+            ->add('value', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
 
         return $validator;
     }
@@ -65,7 +76,9 @@ class VendorsMxsTable extends Table
      */
     public function buildRules(RulesChecker $rules)
     {
+        $rules->add($rules->isUnique(['value']));
         $rules->add($rules->existsIn(['vendor_id'], 'Vendors'));
+
         return $rules;
     }
 }
